@@ -9,6 +9,10 @@ import {
 } from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {TouchpadConstants} from '../constants.js';
 
+type TouchpadSwipeTrackerParams = _SwipeTrackerOptionalParams & {
+    checkAllowedGesture?: (event: CustomEventType) => boolean;
+};
+
 enum TouchpadState {
     NONE = 0,
     PENDING = 1,
@@ -282,9 +286,11 @@ export function createSwipeTracker(
     orientation: Clutter.Orientation,
     followNaturalScroll = true,
     gestureSpeed = 1,
-    params?: _SwipeTrackerOptionalParams
+    params?: TouchpadSwipeTrackerParams
 ): typeof SwipeTracker.prototype {
     params = params ?? {};
+    const checkAllowedGesture = params.checkAllowedGesture;
+    delete params.checkAllowedGesture;
     params.allowDrag = params.allowDrag ?? false;
     params.allowScroll = params.allowScroll ?? false;
     params.phase = params.phase ?? Clutter.EventPhase.CAPTURE;
@@ -317,7 +323,7 @@ export function createSwipeTracker(
         swipeTracker._allowedModes,
         swipeTracker.orientation,
         followNaturalScroll,
-        undefined,
+        checkAllowedGesture,
         gestureSpeed
     );
 

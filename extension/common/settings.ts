@@ -17,6 +17,7 @@ export enum SwipeGestureType {
     VOLUME_CONTROL = 4,
     BRIGHTNESS_CONTROL = 5,
     WINDOW_MANIPULATION = 6,
+    APPLICATION_OVERVIEW = 7,
 }
 
 export enum OverviewNavigationState {

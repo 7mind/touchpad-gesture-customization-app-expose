@@ -21,6 +21,7 @@ import {CloseWindowExtension} from './src/pinchGestures/closeWindow.js';
 import {ShowNotificationListExtension} from './src/pinchGestures/showNotificationList.js';
 import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
+import {ApplicationOverviewGestureExtension} from './src/appSpread.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -126,6 +127,18 @@ export default class TouchpadGestureCustomization extends Extension {
         }
 
         this._extensions.push(overviewRoundTripGesterExtension);
+
+        const verticalApplicationOverviewFingers =
+            verticalSwipeToFingersMap.get(
+                SwipeGestureType.APPLICATION_OVERVIEW
+            );
+
+        if (verticalApplicationOverviewFingers?.length)
+            this._extensions.push(
+                new ApplicationOverviewGestureExtension(
+                    verticalApplicationOverviewFingers
+                )
+            );
 
         /**
          * Workspace navigation
@@ -239,12 +252,12 @@ export default class TouchpadGestureCustomization extends Extension {
                 )
             );
 
-		// pinch to show notification list
-		const showNotificationListFingers = pinchToFingersMap.get(
+        // pinch to show notification list
+        const showNotificationListFingers = pinchToFingersMap.get(
             PinchGestureType.SHOW_NOTIFICATION_LIST
         );
-		if (showNotificationListFingers?.length)
-			this._extensions.push(
+        if (showNotificationListFingers?.length)
+            this._extensions.push(
                 new ShowNotificationListExtension(
                     showNotificationListFingers,
                 )

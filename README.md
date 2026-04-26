@@ -51,6 +51,7 @@ gnome-extensions enable touchpad-gesture-customization@coooolapps.com
 | Snap/half-tile a window                 | Desktop  | 3/4/both | Vertical (\*)       |
 | Volume Control                          | Desktop  | 3/4/both | Vertical/Horizontal |
 | Brightness Control                      | Desktop  | 3/4/both | Vertical/Horizontal |
+| Show current application windows        | Desktop  | 3/4/both | Vertical down       |
 
 | Pinch Gesture      | Modes   | Fingers |
 | :----------------- | :------ | :------ |
