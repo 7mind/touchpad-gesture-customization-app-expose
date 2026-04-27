@@ -1,9 +1,20 @@
+import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {SearchController} from 'resource:///org/gnome/shell/ui/searchController.js';
 import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
+
+type FrozenWorkspace = {
+    _layoutFrozenId: number;
+    _container: {layout_manager: {layout_frozen: boolean}};
+};
+
+type WorkspacesView = {
+    _workspaces?: FrozenWorkspace[];
+    _workspace?: FrozenWorkspace;
+};
 
 export class ApplicationWindowOverview {
     private _app: Shell.App | null = null;
@@ -44,6 +55,7 @@ export class ApplicationWindowOverview {
         this._patchWindowFiltering();
         this._disableSearch();
         this._removeFilteredWorkspaceWindows();
+        this._unfreezeWorkspaceLayouts();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -206,6 +218,35 @@ export class ApplicationWindowOverview {
                 if (!this._hasWindow(window))
                     metaWorkspace.emit('window-removed', window);
             });
+        }
+    }
+
+    // _doRemoveWindow freezes the WorkspaceLayout for 750ms (or until pointer
+    // moves outside the workspace), so the remaining clones don't reflow
+    // mid-gesture. Under a touchpad swipe the pointer doesn't move, so the
+    // layout stays frozen and windows snap to their final positions only when
+    // the timer fires — typically after the gesture has ended. Force the
+    // unfreeze immediately so the app windows tween to their new positions
+    // alongside the overview transition.
+    private _unfreezeWorkspaceLayouts(): void {
+        const display = Main.overview._overview._controls
+            ._workspacesDisplay as unknown as {
+            _workspacesViews?: WorkspacesView[];
+        };
+        const views = display._workspacesViews ?? [];
+
+        for (const view of views) {
+            const workspaces: FrozenWorkspace[] =
+                view._workspaces ?? (view._workspace ? [view._workspace] : []);
+
+            for (const ws of workspaces) {
+                if (ws._layoutFrozenId > 0) {
+                    GLib.source_remove(ws._layoutFrozenId);
+                    ws._layoutFrozenId = 0;
+                }
+
+                ws._container.layout_manager.layout_frozen = false;
+            }
         }
     }
 
