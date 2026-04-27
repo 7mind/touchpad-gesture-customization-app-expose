@@ -19,7 +19,7 @@ enum ExtensionState {
 // progress crosses below -hysteresis the app filter installs; the filter is
 // only torn down again once progress crosses above +hysteresis. A small
 // upward correction within the hysteresis band keeps the current state.
-const APP_OVERVIEW_DIRECTION_HYSTERESIS = 0.1;
+const APP_OVERVIEW_DIRECTION_HYSTERESIS = 0.01;
 
 export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _stateAdjustment: OverviewAdjustment;
