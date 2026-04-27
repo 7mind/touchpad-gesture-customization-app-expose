@@ -9,6 +9,7 @@ import {ExtSettings, OverviewControlsState} from '../constants.js';
 import {ApplicationWindowOverview} from './appSpread.js';
 
 enum ExtensionState {
+
     // DISABLED = 0,
     DEFAULT = 1,
     CUSTOM = 2,
@@ -22,6 +23,7 @@ enum ExtensionState {
 const APP_OVERVIEW_DIRECTION_HYSTERESIS = 0.1;
 
 export class OverviewRoundTripGestureExtension implements ISubExtension {
+
     private _stateAdjustment: OverviewAdjustment;
     private _oldGetStateTransitionParams: typeof OverviewAdjustment.prototype.getStateTransitionParams;
     private _progress = 0;
@@ -35,13 +37,13 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _horizontalConnectors?: number[];
     private _appOverview: ApplicationWindowOverview;
     private _windowTracker: Shell.WindowTracker;
+    private _gestureBeganInAppOverview = false;
+
     // Whether the gesture started with the app-overview filter already
     // installed (i.e. the user is starting a new swipe from inside the
     // application overview). When true, the gesture is locked to the
     // [HIDDEN, WINDOW_PICKER] range and the hysteresis-based mid-gesture
     // filter toggling is suppressed.
-    private _gestureBeganInAppOverview = false;
-
     constructor(navigationStates: OverviewNavigationState) {
         this._navigationStates = navigationStates;
         this._stateAdjustment =
@@ -407,6 +409,7 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                         OverviewControlsState.WINDOW_PICKER,
                     ];
                 }
+
                 return [
                     OverviewControlsState.APP_GRID_P,
                     OverviewControlsState.HIDDEN,
@@ -415,4 +418,5 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                 ];
         }
     }
+
 }

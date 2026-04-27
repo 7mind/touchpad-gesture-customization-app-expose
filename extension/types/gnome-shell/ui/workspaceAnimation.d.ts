@@ -5,6 +5,7 @@ declare module 'resource:///org/gnome/shell/ui/workspaceAnimation.js' {
     import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 
     export class WorkspaceAnimationController {
+
         _swipeTracker: SwipeTracker;
 
         _switchWorkspaceBegin(
@@ -24,5 +25,6 @@ declare module 'resource:///org/gnome/shell/ui/workspaceAnimation.js' {
         ): void;
 
         _movingWindow: Meta.Window;
-    }
+    
+}
 }

@@ -6,6 +6,7 @@ import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
 export class ApplicationWindowOverview {
+
     private _app: Shell.App | null = null;
     private _windows: Meta.Window[] = [];
     private _hiddenSignalId = 0;
@@ -241,4 +242,5 @@ export class ApplicationWindowOverview {
             this._shouldTriggerSearch = undefined;
         }
     }
+
 }

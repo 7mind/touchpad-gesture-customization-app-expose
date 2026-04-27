@@ -52,6 +52,7 @@ declare type WindowActorClone = {
 };
 
 class MonitorGroup {
+
     public monitor: Monitor;
     private _container: Clutter.Actor;
     private _windowActorClones: WindowActorClone[] = [];
@@ -259,9 +260,11 @@ class MonitorGroup {
     destroy() {
         this._container.destroy();
     }
+
 }
 
 export class ShowDesktopExtension implements ISubExtension {
+
     private _windows = new Set<Meta.Window>();
     private _workspace?: Meta.Workspace;
     private _workspaceChangedId = 0;
@@ -476,4 +479,5 @@ export class ShowDesktopExtension implements ISubExtension {
         this._minimizingWindows = [];
         this._workspaceManagerState = WorkspaceManagerState.DEFAULT;
     }
+
 }

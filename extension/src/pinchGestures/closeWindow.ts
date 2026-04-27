@@ -21,6 +21,7 @@ enum CloseWindowGestureState {
 declare type Type_TouchpadPinchGesture = typeof TouchpadPinchGesture.prototype;
 
 export class CloseWindowExtension implements ISubExtension {
+
     private _closeType:
         | PinchGestureType.CLOSE_DOCUMENT
         | PinchGestureType.CLOSE_WINDOW;
@@ -151,4 +152,5 @@ export class CloseWindowExtension implements ISubExtension {
 
         this._focusWindow = undefined;
     }
+
 }
