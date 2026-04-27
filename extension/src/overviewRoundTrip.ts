@@ -274,11 +274,14 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
 
             if (this._appOverview.active) {
                 if (this._gestureBeganInAppOverview) {
-                    // Already in app overview at gesture start: snap is
-                    // restricted to [HIDDEN, WINDOW_PICKER]. Pick the closer
-                    // landing and tear down the filter on close.
+                    // Already in app overview at gesture start: tracker domain
+                    // is shifted to [WINDOW_PICKER, WINDOW_PICKER + 1] so a
+                    // finger-up moves progress *up* (toward WINDOW_PICKER + 1
+                    // = exit), and finger-down is clamped at WINDOW_PICKER
+                    // (stay). Reflect the tracker progress around
+                    // WINDOW_PICKER to get the overview state.
                     finalOverviewState = Math.clamp(
-                        endProgress,
+                        2 * OverviewControlsState.WINDOW_PICKER - endProgress,
                         OverviewControlsState.HIDDEN,
                         OverviewControlsState.WINDOW_PICKER
                     );
@@ -334,15 +337,29 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
 
     _getOverviewProgressValue(progress: number): number {
         if (this._isAppOverviewOnDown()) {
+            if (this._gestureBeganInAppOverview) {
+                // Tracker domain is [WINDOW_PICKER, WINDOW_PICKER + 1]:
+                // - progress = WINDOW_PICKER (finger down, clamped): stay
+                //   (overview state = WINDOW_PICKER)
+                // - progress = WINDOW_PICKER + 1 (finger fully up): close
+                //   (overview state = HIDDEN)
+                return Math.clamp(
+                    2 * OverviewControlsState.WINDOW_PICKER - progress,
+                    OverviewControlsState.HIDDEN,
+                    OverviewControlsState.WINDOW_PICKER
+                );
+            }
+
             const absSidedProgress =
                 progress < OverviewControlsState.HIDDEN
                     ? Math.abs(progress)
                     : progress;
 
             if (this._appOverview.active) {
-                // Filter active: never escape [HIDDEN, WINDOW_PICKER] — the
-                // app drawer must not be reachable from the application
-                // overview, regardless of swipe direction or distance.
+                // Filter installed mid-gesture: never escape
+                // [HIDDEN, WINDOW_PICKER] — the app drawer must not be
+                // reachable from the application overview, regardless of
+                // swipe direction or distance.
                 return Math.clamp(
                     absSidedProgress,
                     OverviewControlsState.HIDDEN,
@@ -399,11 +416,17 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             case OverviewNavigationState.APPLICATION_OVERVIEW_ON_DOWN:
                 if (this._gestureBeganInAppOverview) {
                     // Starting from the application overview: the only
-                    // navigations are "stay" (WINDOW_PICKER) and "close"
-                    // (HIDDEN). The app drawer is intentionally unreachable.
+                    // navigations are "stay" and "close" (HIDDEN). Use a
+                    // tracker domain *above* WINDOW_PICKER so finger-up has
+                    // somewhere to go (toward WINDOW_PICKER + 1 = exit) and
+                    // finger-down is naturally clamped at WINDOW_PICKER
+                    // (stay). _getOverviewProgressValue / _gestureEnd reflect
+                    // the tracker progress around WINDOW_PICKER to derive the
+                    // overview state, so finger-up ⇒ close, finger-down ⇒
+                    // stay. The app drawer is intentionally unreachable.
                     return [
-                        OverviewControlsState.HIDDEN,
                         OverviewControlsState.WINDOW_PICKER,
+                        OverviewControlsState.WINDOW_PICKER + 1,
                     ];
                 }
 
