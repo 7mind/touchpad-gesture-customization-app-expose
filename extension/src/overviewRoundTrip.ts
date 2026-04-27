@@ -9,7 +9,6 @@ import {ExtSettings, OverviewControlsState} from '../constants.js';
 import {ApplicationWindowOverview} from './appSpread.js';
 
 enum ExtensionState {
-
     // DISABLED = 0,
     DEFAULT = 1,
     CUSTOM = 2,
@@ -23,7 +22,6 @@ enum ExtensionState {
 const APP_OVERVIEW_DIRECTION_HYSTERESIS = 0.1;
 
 export class OverviewRoundTripGestureExtension implements ISubExtension {
-
     private _stateAdjustment: OverviewAdjustment;
     private _oldGetStateTransitionParams: typeof OverviewAdjustment.prototype.getStateTransitionParams;
     private _progress = 0;
@@ -235,8 +233,7 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             if (!this._gestureBeganInAppOverview) {
                 const hysteresis = APP_OVERVIEW_DIRECTION_HYSTERESIS;
 
-                if (progress < -hysteresis)
-                    this._tryInstallAppOverviewFilter();
+                if (progress < -hysteresis) this._tryInstallAppOverviewFilter();
                 else if (progress > hysteresis)
                     this._uninstallAppOverviewFilter();
             }
@@ -418,5 +415,4 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                 ];
         }
     }
-
 }

@@ -5,7 +5,6 @@ const DELAY_BETWEEN_KEY_PRESS = 10; // ms
 const timeoutIds = new Set<number>();
 
 class VirtualKeyboard {
-
     private _virtualDevice: Clutter.VirtualInputDevice;
 
     constructor() {
@@ -51,7 +50,6 @@ class VirtualKeyboard {
             keyState
         );
     }
-
 }
 
 export type IVirtualKeyboard = VirtualKeyboard;

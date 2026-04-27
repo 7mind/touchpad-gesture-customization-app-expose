@@ -6,7 +6,6 @@ import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
 export class ApplicationWindowOverview {
-
     private _app: Shell.App | null = null;
     private _windows: Meta.Window[] = [];
     private _hiddenSignalId = 0;
@@ -44,7 +43,7 @@ export class ApplicationWindowOverview {
 
         this._patchWindowFiltering();
         this._disableSearch();
-        this._resetWorkspaceWindows();
+        this._removeFilteredWorkspaceWindows();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -186,13 +185,15 @@ export class ApplicationWindowOverview {
         }
     }
 
-    // Force every Workspace/Thumbnail to re-evaluate its window list against the
-    // currently-installed `_isOverviewWindow` filter by emitting window-removed
-    // followed by window-added for every window. Needed when the filter is
-    // installed mid-gesture, after Workspaces have already been populated with
-    // an unfiltered window set: re-emitting only `window-added` is a no-op for
-    // already-tracked windows, so non-app windows would otherwise stay visible.
-    private _resetWorkspaceWindows(): void {
+    // When the filter is installed mid-gesture, Workspaces have already been
+    // populated unfiltered. We need to evict the windows that no longer pass
+    // the filter — but NOT touch windows that should remain visible: GNOME's
+    // _doAddWindow re-animates new clones from scale 0 → 1, so emitting
+    // window-removed+window-added for an already-visible window makes it
+    // collapse to a dot and pop back out. Emit window-removed only for the
+    // windows being filtered out; app windows keep their existing clones and
+    // animate smoothly into their new layout positions.
+    private _removeFilteredWorkspaceWindows(): void {
         const {workspaceManager} = global;
 
         for (let i = 0; i < workspaceManager.nWorkspaces; i++) {
@@ -201,13 +202,10 @@ export class ApplicationWindowOverview {
             if (metaWorkspace === null)
                 throw new Error(`Missing workspace at index ${i}`);
 
-            const windows = metaWorkspace.list_windows();
-            windows.forEach(window =>
-                metaWorkspace.emit('window-removed', window)
-            );
-            windows.forEach(window =>
-                metaWorkspace.emit('window-added', window)
-            );
+            metaWorkspace.list_windows().forEach(window => {
+                if (!this._hasWindow(window))
+                    metaWorkspace.emit('window-removed', window);
+            });
         }
     }
 
@@ -242,5 +240,4 @@ export class ApplicationWindowOverview {
             this._shouldTriggerSearch = undefined;
         }
     }
-
 }

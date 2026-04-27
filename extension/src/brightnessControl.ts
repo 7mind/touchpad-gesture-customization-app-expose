@@ -9,7 +9,6 @@ import {ExtSettings, TouchpadConstants} from '../constants.js';
 const BRIGHTNESS_OSD_FPS_CAP_MS = 1000 / 30;
 
 export class BrightnessControlGestureExtension implements ISubExtension {
-
     private _verticalSwipeTracker?: SwipeTracker;
     private _horizontalSwipeTracker?: SwipeTracker;
     private _verticalConnectHandlers?: number[];
@@ -160,5 +159,4 @@ export class BrightnessControlGestureExtension implements ISubExtension {
         duration: number,
         progress: number
     ): void {}
-
 }

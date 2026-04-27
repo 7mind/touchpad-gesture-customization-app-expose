@@ -10,7 +10,6 @@ enum ShowNotificationListGestureState {
 declare type Type_TouchpadPinchGesture = typeof TouchpadPinchGesture.prototype;
 
 export class ShowNotificationListExtension implements ISubExtension {
-
     private _pinchTracker: Type_TouchpadPinchGesture;
 
     constructor(nfingers: number[]) {
@@ -54,5 +53,4 @@ export class ShowNotificationListExtension implements ISubExtension {
     private _invokeGestureCompleteAction() {
         Main.panel.toggleCalendar();
     }
-
 }
