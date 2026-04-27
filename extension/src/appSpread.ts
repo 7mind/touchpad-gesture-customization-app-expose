@@ -1,19 +1,11 @@
-import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {OverviewAdjustment} from 'resource:///org/gnome/shell/ui/overviewControls.js';
-import {
-    CustomEventType,
-    SwipeTracker,
-} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {SearchController} from 'resource:///org/gnome/shell/ui/searchController.js';
 import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
-import {OverviewControlsState} from '../constants.js';
-import {createSwipeTracker} from './swipeTracker.js';
 
-class ApplicationWindowOverview {
+export class ApplicationWindowOverview {
     private _app: Shell.App | null = null;
     private _windows: Meta.Window[] = [];
     private _hiddenSignalId = 0;
@@ -51,6 +43,7 @@ class ApplicationWindowOverview {
 
         this._patchWindowFiltering();
         this._disableSearch();
+        this._refreshWorkspaceWindows();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -103,7 +96,7 @@ class ApplicationWindowOverview {
         if (!this.active) return;
 
         this.hide();
-        this._restoreDefaultWindows();
+        this._refreshWorkspaceWindows();
     }
 
     private _hasWindow(window: Meta.Window): boolean {
@@ -176,7 +169,7 @@ class ApplicationWindowOverview {
         }
     }
 
-    private _restoreDefaultWindows(): void {
+    private _refreshWorkspaceWindows(): void {
         const {workspaceManager} = global;
 
         for (let i = 0; i < workspaceManager.nWorkspaces; i++) {
@@ -222,150 +215,5 @@ class ApplicationWindowOverview {
                 this._shouldTriggerSearch;
             this._shouldTriggerSearch = undefined;
         }
-    }
-}
-
-export class ApplicationOverviewGestureExtension implements ISubExtension {
-    private _stateAdjustment: OverviewAdjustment;
-    private _swipeTracker: SwipeTracker;
-    private _connectors: number[];
-    private _appOverview: ApplicationWindowOverview;
-    private _windowTracker: Shell.WindowTracker;
-    private _gestureActive = false;
-
-    constructor(nfingers: number[]) {
-        this._stateAdjustment =
-            Main.overview._overview._controls._stateAdjustment;
-        this._appOverview = new ApplicationWindowOverview();
-        this._windowTracker = Shell.WindowTracker.get_default();
-        this._swipeTracker = createSwipeTracker(
-            global.stage,
-            nfingers,
-            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
-            Clutter.Orientation.VERTICAL,
-            false,
-            1,
-            {
-                allowTouch: false,
-                checkAllowedGesture: this._canHandleGesture.bind(this),
-            }
-        );
-
-        this._connectors = [
-            this._swipeTracker.connect('begin', this._gestureBegin.bind(this)),
-            this._swipeTracker.connect(
-                'update',
-                this._gestureUpdate.bind(this)
-            ),
-            this._swipeTracker.connect('end', this._gestureEnd.bind(this)),
-        ];
-    }
-
-    destroy(): void {
-        this._connectors.forEach(connector =>
-            this._swipeTracker.disconnect(connector)
-        );
-        this._connectors = [];
-        this._swipeTracker.destroy();
-
-        if (this._appOverview.active && Main.overview.visible)
-            this._appOverview.restoreDefaultOverview();
-        else this._appOverview.hide();
-    }
-
-    private _canHandleGesture(_event: CustomEventType): boolean {
-        if (!this._appOverview.supported) return false;
-
-        if (Main.overview.visible) return this._appOverview.active;
-
-        return this._getFocusedApp() !== null;
-    }
-
-    private _gestureBegin(tracker: SwipeTracker): void {
-        if (!this._appOverview.active) {
-            const app = this._getFocusedApp();
-
-            if (app === null || !this._appOverview.show(app)) {
-                this._confirmNoopSwipe(tracker);
-                return;
-            }
-        }
-
-        const startProgress = Math.clamp(
-            this._stateAdjustment.value,
-            OverviewControlsState.HIDDEN,
-            OverviewControlsState.WINDOW_PICKER
-        );
-        const overviewTracker = {
-            confirmSwipe: (
-                distance: number,
-                _snapPoints: number[],
-                _currentProgress: number,
-                _cancelProgress: number
-            ) => {
-                tracker.confirmSwipe(
-                    distance,
-                    [
-                        OverviewControlsState.HIDDEN,
-                        OverviewControlsState.WINDOW_PICKER,
-                    ],
-                    startProgress,
-                    startProgress
-                );
-            },
-        };
-
-        this._gestureActive = true;
-        Main.overview._gestureBegin(overviewTracker);
-    }
-
-    private _gestureUpdate(tracker: SwipeTracker, progress: number): void {
-        if (!this._gestureActive) return;
-
-        Main.overview._gestureUpdate(
-            tracker,
-            this._clampOverviewProgress(progress)
-        );
-    }
-
-    private _gestureEnd(
-        tracker: SwipeTracker,
-        duration: number,
-        endProgress: number
-    ): void {
-        if (!this._gestureActive) return;
-
-        const finalProgress = this._clampOverviewProgress(endProgress);
-
-        this._gestureActive = false;
-        Main.overview._gestureEnd(tracker, duration, finalProgress);
-
-        if (
-            finalProgress === OverviewControlsState.HIDDEN &&
-            !Main.overview.visible
-        )
-            this._appOverview.hide();
-    }
-
-    private _confirmNoopSwipe(tracker: SwipeTracker): void {
-        this._gestureActive = false;
-        tracker.confirmSwipe(
-            1,
-            [OverviewControlsState.HIDDEN],
-            OverviewControlsState.HIDDEN,
-            OverviewControlsState.HIDDEN
-        );
-    }
-
-    private _getFocusedApp(): Shell.App | null {
-        return this._windowTracker.focus_app as Shell.App | null;
-    }
-
-    private _clampOverviewProgress(progress: number): number {
-        return Math.clamp(
-            progress,
-            OverviewControlsState.HIDDEN,
-            OverviewControlsState.WINDOW_PICKER
-        );
     }
 }

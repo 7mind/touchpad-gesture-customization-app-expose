@@ -11,6 +11,7 @@
     <value value='0' nick='CYCLIC' />
     <value value='1' nick='GNOME' />
     <value value='2' nick='WINDOW_PICKER_ONLY' />
+    <value value='3' nick='APPLICATION_OVERVIEW_ON_DOWN' />
   </enum>
   <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.workspace-switching-states'>
     <value value='0' nick='DEFAULT' />
@@ -24,7 +25,6 @@
     <value value='4' nick='VOLUME_CONTROL' />
     <value value='5' nick='BRIGHTNESS_CONTROL' />
     <value value='6' nick='WINDOW_MANIPULATION' />
-    <value value='7' nick='APPLICATION_OVERVIEW' />
   </enum>
   <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.horizontal-swipe-gestures'>
     <value value='0' nick='NONE' />

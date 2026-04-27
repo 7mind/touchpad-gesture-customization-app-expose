@@ -4,6 +4,10 @@
 
 This extension modifies and extends existing touchpad gestures on GNOME using Wayland. This project is a fork of [gnome-gesture-improvements](https://github.com/harshadgavali/gnome-gesture-improvements). Since the original project seems to be no longer maintained, I setup this project with the aim of taking over the development and maintenance of this wonderful extension that I relied on for daily use.
 
+### About this fork
+
+This repository ([7mind/touchpad-gesture-customization-app-expose](https://github.com/7mind/touchpad-gesture-customization-app-expose)) is a downstream fork of [HieuTNg/touchpad-gesture-customization](https://github.com/HieuTNg/touchpad-gesture-customization). It exists primarily to add a macOS-style **App Exposé** behavior to the overview gesture: when configured, swiping down with 3/4 fingers spreads only the windows of the currently focused application, while swiping up keeps the standard GNOME overview / app grid navigation. See the *Application overview on down* mode under *Overview navigation states* in the extension preferences. Changes from this fork may or may not be upstreamed.
+
 **Note**:
 - ```main``` branch contains latest changes which may not work on older version of GNOME, please choose the correct branch if install from source. 
 - I have removed the support for X11 since I only use Wayland, but this can be added again in the future if needed and if someone is willing to support this.
@@ -51,7 +55,7 @@ gnome-extensions enable touchpad-gesture-customization@coooolapps.com
 | Snap/half-tile a window                 | Desktop  | 3/4/both | Vertical (\*)       |
 | Volume Control                          | Desktop  | 3/4/both | Vertical/Horizontal |
 | Brightness Control                      | Desktop  | 3/4/both | Vertical/Horizontal |
-| Show current application windows        | Desktop  | 3/4/both | Vertical down       |
+| Show current application windows (\*\*) | Desktop  | 3/4/both | Vertical down       |
 
 | Pinch Gesture      | Modes   | Fingers |
 | :----------------- | :------ | :------ |
@@ -88,6 +92,7 @@ gnome-extensions enable touchpad-gesture-customization@coooolapps.com
 
 - Enabling minimising window gesture for Window Manipulation will disable snapping/tiling gesture.
 - If you are using an older version of GNOME, there might be a bug which prevent the extension from detecting **hold and swipe gesture** and **pinch gesture**. If you face this problem, the gesture can only work if the mouse pointer is pointed at the desktop or top panel.
+- (\*\*) **App Exposé / current application windows** is exposed as a sub-mode of the existing Overview gesture rather than a standalone gesture. Set *Overview navigation states* to *Application overview on down* in the extension preferences (see *Customization* below). With this mode active, swiping up still opens the regular overview / app grid; swiping down past a small threshold filters the overview to windows of the currently focused application (similar to macOS App Exposé). Reversing direction within the same swipe restores the regular overview. The mode falls back to the standard overview when no app is focused or when no app windows are eligible for spreading.
 
 ## Customization
 

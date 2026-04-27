@@ -6,12 +6,20 @@ import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {createSwipeTracker} from './swipeTracker.js';
 import {OverviewNavigationState} from '../common/settings.js';
 import {ExtSettings, OverviewControlsState} from '../constants.js';
+import {ApplicationWindowOverview} from './appSpread.js';
 
 enum ExtensionState {
     // DISABLED = 0,
     DEFAULT = 1,
     CUSTOM = 2,
 }
+
+// Threshold (in tracker-progress units, where 1 unit = HIDDEN→WINDOW_PICKER)
+// for committing to a direction in APPLICATION_OVERVIEW_ON_DOWN mode. Once
+// progress crosses below -hysteresis the app filter installs; the filter is
+// only torn down again once progress crosses above +hysteresis. A small
+// upward correction within the hysteresis band keeps the current state.
+const APP_OVERVIEW_DIRECTION_HYSTERESIS = 0.1;
 
 export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _stateAdjustment: OverviewAdjustment;
@@ -25,6 +33,8 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _horizontalSwipeTracker?: typeof SwipeTracker.prototype;
     private _verticalConnectors?: number[];
     private _horizontalConnectors?: number[];
+    private _appOverview: ApplicationWindowOverview;
+    private _windowTracker: Shell.WindowTracker;
 
     constructor(navigationStates: OverviewNavigationState) {
         this._navigationStates = navigationStates;
@@ -32,7 +42,28 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             Main.overview._overview._controls._stateAdjustment;
         this._oldGetStateTransitionParams =
             this._stateAdjustment.getStateTransitionParams;
+        this._appOverview = new ApplicationWindowOverview();
+        this._windowTracker = Shell.WindowTracker.get_default();
         this._progress = 0;
+    }
+
+    private _isAppOverviewOnDown(): boolean {
+        return (
+            this._navigationStates ===
+            OverviewNavigationState.APPLICATION_OVERVIEW_ON_DOWN
+        );
+    }
+
+    private _tryInstallAppOverviewFilter(): void {
+        if (!this._appOverview.supported || this._appOverview.active) return;
+        const app = this._windowTracker.focus_app as Shell.App | null;
+        if (app === null) return;
+        this._appOverview.show(app);
+    }
+
+    private _uninstallAppOverviewFilter(): void {
+        if (this._appOverview.active)
+            this._appOverview.restoreDefaultOverview();
     }
 
     _getStateTransitionParams(): typeof OverviewAdjustment.prototype.getStateTransitionParams.prototype {
@@ -154,6 +185,8 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
         this._horizontalConnectors = undefined;
         this._horizontalSwipeTracker = undefined;
 
+        if (this._appOverview.active) this._appOverview.hide();
+
         Main.overview._swipeTracker.enabled = true;
         this._stateAdjustment.getStateTransitionParams =
             this._oldGetStateTransitionParams.bind(this._stateAdjustment);
@@ -187,6 +220,21 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
         tracker: typeof SwipeTracker.prototype,
         progress: number
     ): void {
+        if (this._isAppOverviewOnDown()) {
+            const hysteresis = APP_OVERVIEW_DIRECTION_HYSTERESIS;
+
+            if (progress < -hysteresis) this._tryInstallAppOverviewFilter();
+            else if (progress > hysteresis) this._uninstallAppOverviewFilter();
+
+            this._extensionState = ExtensionState.DEFAULT;
+            this._progress = progress;
+            Main.overview._gestureUpdate(
+                tracker,
+                this._getOverviewProgressValue(progress)
+            );
+            return;
+        }
+
         if (
             progress < OverviewControlsState.HIDDEN ||
             progress > OverviewControlsState.APP_GRID
@@ -209,6 +257,30 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
         duration: number,
         endProgress: number
     ): void {
+        if (this._isAppOverviewOnDown()) {
+            let finalOverviewState: number;
+
+            if (this._appOverview.active) {
+                finalOverviewState =
+                    endProgress >= OverviewControlsState.HIDDEN
+                        ? OverviewControlsState.HIDDEN
+                        : OverviewControlsState.WINDOW_PICKER;
+
+                if (finalOverviewState === OverviewControlsState.HIDDEN)
+                    this._uninstallAppOverviewFilter();
+            } else {
+                finalOverviewState = Math.clamp(
+                    endProgress,
+                    OverviewControlsState.HIDDEN,
+                    OverviewControlsState.APP_GRID
+                );
+            }
+
+            this._extensionState = ExtensionState.DEFAULT;
+            Main.overview._gestureEnd(tracker, duration, finalOverviewState);
+            return;
+        }
+
         if (this._progress < OverviewControlsState.HIDDEN) {
             this._extensionState = ExtensionState.CUSTOM;
             endProgress =
@@ -236,6 +308,17 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     }
 
     _getOverviewProgressValue(progress: number): number {
+        if (this._isAppOverviewOnDown()) {
+            if (progress < OverviewControlsState.HIDDEN) {
+                return Math.min(
+                    OverviewControlsState.WINDOW_PICKER,
+                    Math.abs(progress)
+                );
+            }
+
+            return progress;
+        }
+
         if (progress < OverviewControlsState.HIDDEN) {
             return Math.min(
                 OverviewControlsState.APP_GRID,
@@ -271,6 +354,13 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                 return [
                     OverviewControlsState.HIDDEN,
                     OverviewControlsState.WINDOW_PICKER,
+                ];
+            case OverviewNavigationState.APPLICATION_OVERVIEW_ON_DOWN:
+                return [
+                    OverviewControlsState.APP_GRID_P,
+                    OverviewControlsState.HIDDEN,
+                    OverviewControlsState.WINDOW_PICKER,
+                    OverviewControlsState.APP_GRID,
                 ];
         }
     }

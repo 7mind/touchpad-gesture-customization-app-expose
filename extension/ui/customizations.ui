@@ -8,6 +8,7 @@
             <item translatable="yes">Cyclic</item>
             <item translatable="yes">GNOME</item>
             <item translatable="yes">Overview only</item>
+            <item translatable="yes">Application overview on down</item>
         </items>
     </object>
 

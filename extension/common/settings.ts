@@ -17,13 +17,13 @@ export enum SwipeGestureType {
     VOLUME_CONTROL = 4,
     BRIGHTNESS_CONTROL = 5,
     WINDOW_MANIPULATION = 6,
-    APPLICATION_OVERVIEW = 7,
 }
 
 export enum OverviewNavigationState {
     CYCLIC = 0,
     GNOME = 1,
     WINDOW_PICKER_ONLY = 2,
+    APPLICATION_OVERVIEW_ON_DOWN = 3,
 }
 
 export enum WorkspaceSwitchingState {
