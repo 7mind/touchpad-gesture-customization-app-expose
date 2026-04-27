@@ -43,7 +43,7 @@ export class ApplicationWindowOverview {
 
         this._patchWindowFiltering();
         this._disableSearch();
-        this._refreshWorkspaceWindows();
+        this._resetWorkspaceWindows();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -179,6 +179,31 @@ export class ApplicationWindowOverview {
                 throw new Error(`Missing workspace at index ${i}`);
 
             const windows = metaWorkspace.list_windows();
+            windows.forEach(window =>
+                metaWorkspace.emit('window-added', window)
+            );
+        }
+    }
+
+    // Force every Workspace/Thumbnail to re-evaluate its window list against the
+    // currently-installed `_isOverviewWindow` filter by emitting window-removed
+    // followed by window-added for every window. Needed when the filter is
+    // installed mid-gesture, after Workspaces have already been populated with
+    // an unfiltered window set: re-emitting only `window-added` is a no-op for
+    // already-tracked windows, so non-app windows would otherwise stay visible.
+    private _resetWorkspaceWindows(): void {
+        const {workspaceManager} = global;
+
+        for (let i = 0; i < workspaceManager.nWorkspaces; i++) {
+            const metaWorkspace = workspaceManager.get_workspace_by_index(i);
+
+            if (metaWorkspace === null)
+                throw new Error(`Missing workspace at index ${i}`);
+
+            const windows = metaWorkspace.list_windows();
+            windows.forEach(window =>
+                metaWorkspace.emit('window-removed', window)
+            );
             windows.forEach(window =>
                 metaWorkspace.emit('window-added', window)
             );

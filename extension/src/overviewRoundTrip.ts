@@ -35,6 +35,12 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _horizontalConnectors?: number[];
     private _appOverview: ApplicationWindowOverview;
     private _windowTracker: Shell.WindowTracker;
+    // Whether the gesture started with the app-overview filter already
+    // installed (i.e. the user is starting a new swipe from inside the
+    // application overview). When true, the gesture is locked to the
+    // [HIDDEN, WINDOW_PICKER] range and the hysteresis-based mid-gesture
+    // filter toggling is suppressed.
+    private _gestureBeganInAppOverview = false;
 
     constructor(navigationStates: OverviewNavigationState) {
         this._navigationStates = navigationStates;
@@ -195,6 +201,9 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     }
 
     _gestureBegin(tracker: typeof SwipeTracker.prototype): void {
+        this._gestureBeganInAppOverview =
+            this._isAppOverviewOnDown() && this._appOverview.active;
+
         const _tracker = {
             confirmSwipe: (
                 distance: number,
@@ -221,10 +230,14 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
         progress: number
     ): void {
         if (this._isAppOverviewOnDown()) {
-            const hysteresis = APP_OVERVIEW_DIRECTION_HYSTERESIS;
+            if (!this._gestureBeganInAppOverview) {
+                const hysteresis = APP_OVERVIEW_DIRECTION_HYSTERESIS;
 
-            if (progress < -hysteresis) this._tryInstallAppOverviewFilter();
-            else if (progress > hysteresis) this._uninstallAppOverviewFilter();
+                if (progress < -hysteresis)
+                    this._tryInstallAppOverviewFilter();
+                else if (progress > hysteresis)
+                    this._uninstallAppOverviewFilter();
+            }
 
             this._extensionState = ExtensionState.DEFAULT;
             this._progress = progress;
@@ -261,10 +274,23 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             let finalOverviewState: number;
 
             if (this._appOverview.active) {
-                finalOverviewState =
-                    endProgress >= OverviewControlsState.HIDDEN
-                        ? OverviewControlsState.HIDDEN
-                        : OverviewControlsState.WINDOW_PICKER;
+                if (this._gestureBeganInAppOverview) {
+                    // Already in app overview at gesture start: snap is
+                    // restricted to [HIDDEN, WINDOW_PICKER]. Pick the closer
+                    // landing and tear down the filter on close.
+                    finalOverviewState = Math.clamp(
+                        endProgress,
+                        OverviewControlsState.HIDDEN,
+                        OverviewControlsState.WINDOW_PICKER
+                    );
+                } else {
+                    // Filter installed mid-gesture from a regular state: this
+                    // is the swipe-down-to-app-overview commit.
+                    finalOverviewState =
+                        endProgress >= OverviewControlsState.HIDDEN
+                            ? OverviewControlsState.HIDDEN
+                            : OverviewControlsState.WINDOW_PICKER;
+                }
 
                 if (finalOverviewState === OverviewControlsState.HIDDEN)
                     this._uninstallAppOverviewFilter();
@@ -309,10 +335,26 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
 
     _getOverviewProgressValue(progress: number): number {
         if (this._isAppOverviewOnDown()) {
+            const absSidedProgress =
+                progress < OverviewControlsState.HIDDEN
+                    ? Math.abs(progress)
+                    : progress;
+
+            if (this._appOverview.active) {
+                // Filter active: never escape [HIDDEN, WINDOW_PICKER] — the
+                // app drawer must not be reachable from the application
+                // overview, regardless of swipe direction or distance.
+                return Math.clamp(
+                    absSidedProgress,
+                    OverviewControlsState.HIDDEN,
+                    OverviewControlsState.WINDOW_PICKER
+                );
+            }
+
             if (progress < OverviewControlsState.HIDDEN) {
                 return Math.min(
                     OverviewControlsState.WINDOW_PICKER,
-                    Math.abs(progress)
+                    absSidedProgress
                 );
             }
 
@@ -356,6 +398,15 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                     OverviewControlsState.WINDOW_PICKER,
                 ];
             case OverviewNavigationState.APPLICATION_OVERVIEW_ON_DOWN:
+                if (this._gestureBeganInAppOverview) {
+                    // Starting from the application overview: the only
+                    // navigations are "stay" (WINDOW_PICKER) and "close"
+                    // (HIDDEN). The app drawer is intentionally unreachable.
+                    return [
+                        OverviewControlsState.HIDDEN,
+                        OverviewControlsState.WINDOW_PICKER,
+                    ];
+                }
                 return [
                     OverviewControlsState.APP_GRID_P,
                     OverviewControlsState.HIDDEN,
