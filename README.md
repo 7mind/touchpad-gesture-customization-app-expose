@@ -29,8 +29,6 @@ Then swipe up will show default overview and swipe down will show an overview of
 
 ### Manually
 
-**Note**: Please choose correct branch for your corresponding version of GNOME first. 
-
 1. Install extension
 
 ```
