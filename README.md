@@ -12,11 +12,11 @@ In `gnome-extensions-app` settings,
 
 `Overview navigation states` should be set to `Application overview on down`:
 
-<img width="1378" height="1136" alt="Image" src="./misc-setting.png" />
+<img width="689" height="568" alt="Image" src="./misc-setting.png" />
 
 At least one vertical swipe gesture should be set to `Application overview`:
 
-<img width="1378" height="1136" alt="Image" src="./swipe-setting.png" />
+<img width="689" height="568" alt="Image" src="./swipe-setting.png" />
 
 Then swipe up will show default overview and swipe down will show an overview of current application's windows only.
 
