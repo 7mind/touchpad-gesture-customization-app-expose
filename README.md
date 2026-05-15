@@ -35,7 +35,7 @@ Then swipe up will show default overview and swipe down will show an overview of
 
 ```
 git clone https://github.com/7mind/touchpad-gesture-customization-app-expose.git
-cd touchpad-gesture-customization
+cd touchpad-gesture-customization-app-expose
 npm install
 npm run update
 ```
