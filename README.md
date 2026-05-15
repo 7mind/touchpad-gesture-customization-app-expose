@@ -8,6 +8,18 @@ This extension modifies and extends existing touchpad gestures on GNOME using Wa
 
 This repository ([7mind/touchpad-gesture-customization-app-expose](https://github.com/7mind/touchpad-gesture-customization-app-expose)) is a downstream fork of [HieuTNg/touchpad-gesture-customization](https://github.com/HieuTNg/touchpad-gesture-customization). It exists primarily to add a macOS-style **App Exposé** behavior to the overview gesture: when configured, swiping down with 3/4 fingers spreads only the windows of the currently focused application, while swiping up keeps the standard GNOME overview / app grid navigation. See the *Application overview on down* mode under *Overview navigation states* in the extension preferences. Changes from this fork may or may not be upstreamed.
 
+In `gnome-extensions-app` settings,
+
+`Overview navigation states` should be set to `Application overview on down`:
+
+<img width="1378" height="1136" alt="Image" src="./misc-setting.png" />
+
+At least one vertical swipe gesture should be set to `Application overview`:
+
+<img width="1378" height="1136" alt="Image" src="./swipe-setting.png" />
+
+Then swipe up will show default overview and swipe down will show an overview of current application's windows only.
+
 **Note**:
 - ```main``` branch contains latest changes which may not work on older version of GNOME, please choose the correct branch if install from source. 
 - I have removed the support for X11 since I only use Wayland, but this can be added again in the future if needed and if someone is willing to support this.
