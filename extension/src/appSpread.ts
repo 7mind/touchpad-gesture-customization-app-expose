@@ -160,9 +160,12 @@ export class ApplicationWindowOverview {
             if (thumbnailIsOverviewWindow === undefined)
                 throw new Error('Missing thumbnail overview window filter');
 
+            const metaWindow = windowActor.metaWindow;
+
             return (
+                metaWindow !== null &&
                 thumbnailIsOverviewWindow.call(this, windowActor) &&
-                hasWindow(windowActor.metaWindow)
+                hasWindow(metaWindow)
             );
         };
     }

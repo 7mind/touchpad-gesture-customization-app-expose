@@ -9,7 +9,7 @@
         "type": "git",
         "url": "https://github.com/HieuTNg/touchpad-gesture-customization"
     },
-    "author": "Hieu Trung Nguyen <hieutnguyen@coooolapps.com> (https://coooolapps.com/)",
+    "author": "Hieu Trung Nguyen <hieutng@coooolapps.com> (https://coooolapps.com/)",
     "license": "LGPL-3.0-or-later",
     "bugs": {
         "url": "https://github.com/HieuTNg/touchpad-gesture-customization/issues"
@@ -39,6 +39,6 @@
     },
     "dependencies": {
         "@girs/gjs": "^4.0.0-beta.38",
-        "@girs/gnome-shell": "^49.1.0"
+        "@girs/gnome-shell": "^50.0.0"
     }
 }
