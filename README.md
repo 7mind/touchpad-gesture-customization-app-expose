@@ -27,12 +27,6 @@ Then swipe up will show default overview and swipe down will show an overview of
 
 ## Installation
 
-### From GNOME Extensions Website
-
-<a href="https://extensions.gnome.org/extension/7850/touchpad-gesture-customization/">
-<img src="https://github.com/andyholmes/gnome-shell-extensions-badge/raw/master/get-it-on-ego.svg" alt="Get it on EGO" width="200" />
-</a>
-
 ### Manually
 
 **Note**: Please choose correct branch for your corresponding version of GNOME first. 
@@ -40,7 +34,7 @@ Then swipe up will show default overview and swipe down will show an overview of
 1. Install extension
 
 ```
-git clone https://github.com/HieuTNg/touchpad-gesture-customization.git
+git clone https://github.com/7mind/touchpad-gesture-customization-app-expose.git
 cd touchpad-gesture-customization
 npm install
 npm run update
