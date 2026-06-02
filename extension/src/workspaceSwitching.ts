@@ -12,6 +12,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ExtSettings, OverviewControlsState} from '../constants.js';
 import {createSwipeTracker, TouchpadSwipeGesture} from './swipeTracker.js';
 import {WorkspaceSwitchingState} from '../common/settings.js';
+import {bindTouchpadHandlers} from './utils/compat.js';
 
 interface ShallowSwipeTracker {
     orientation: Clutter.Orientation;
@@ -330,18 +331,10 @@ export class WorkspaceSwitchingExtension implements ISubExtension {
         }
 
         swipeTracker._touchpadGesture = touchpadSwipeGesture as TouchpadGesture;
-        swipeTracker._touchpadGesture.connect(
-            'begin',
-            swipeTracker._beginTouchpadGesture.bind(swipeTracker)
-        );
-        swipeTracker._touchpadGesture.connect(
-            'update',
-            swipeTracker._updateTouchpadGesture.bind(swipeTracker)
-        );
-        swipeTracker._touchpadGesture.connect(
-            'end',
-            swipeTracker._endTouchpadGesture.bind(swipeTracker)
-        );
+        const handlers = bindTouchpadHandlers(swipeTracker);
+        swipeTracker._touchpadGesture.connect('begin', handlers.begin);
+        swipeTracker._touchpadGesture.connect('update', handlers.update);
+        swipeTracker._touchpadGesture.connect('end', handlers.end);
         swipeTracker.bind_property(
             'enabled',
             swipeTracker._touchpadGesture,

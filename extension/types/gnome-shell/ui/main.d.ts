@@ -10,14 +10,17 @@ declare module 'resource:///org/gnome/shell/ui/main.js' {
     import {WindowManager} from 'resource:///org/gnome/shell/ui/windowManager.js';
     import {WorkspaceAnimationController} from 'resource:///org/gnome/shell/ui/workspaceAnimation.js';
 
-    const brightnessManager: {
-        _globalScale: {
-            _value: number;
-            _setValue(value: number): void;
-        };
-        connect(signal: string, callback: () => void): number;
-        disconnect(id: number): void;
-    };
+    // Introduced in GNOME 49; undefined on GNOME 48 (D-Bus proxy is used there).
+    const brightnessManager:
+        | {
+              _globalScale: {
+                  _value: number;
+                  _setValue(value: number): void;
+              };
+              connect(signal: string, callback: () => void): number;
+              disconnect(id: number): void;
+          }
+        | undefined;
 
     const actionMode: Shell.ActionMode;
     export function activateWindow(
@@ -74,11 +77,20 @@ declare module 'resource:///org/gnome/shell/ui/main.js' {
     };
 
     const osdWindowManager: {
-        showAll(
+        // GNOME 49+.
+        showAll?(
             icon: Gio.Icon,
             label: string | null,
             level: number,
             maxlevel: number
+        ): void;
+
+        // GNOME 48 (replaced by showAll in 49).
+        show?(
+            monitorIndex: number,
+            icon: Gio.Icon,
+            label: string | null,
+            level: number
         ): void;
         hideAll(): void;
     };

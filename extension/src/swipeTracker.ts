@@ -8,6 +8,10 @@ import {
     _SwipeTrackerOptionalParams,
 } from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {TouchpadConstants} from '../constants.js';
+import {
+    HAS_TOUCHPAD_GESTURE_METHODS,
+    bindTouchpadHandlers,
+} from './utils/compat.js';
 
 enum TouchpadState {
     NONE = 0,
@@ -287,7 +291,11 @@ export function createSwipeTracker(
     params = params ?? {};
     params.allowDrag = params.allowDrag ?? false;
     params.allowScroll = params.allowScroll ?? false;
-    params.phase = params.phase ?? Clutter.EventPhase.CAPTURE;
+
+    // The `phase` option only exists on GNOME 49+ (along with the renamed
+    // touchpad gesture handlers); omit it on GNOME 48.
+    if (HAS_TOUCHPAD_GESTURE_METHODS)
+        params.phase = params.phase ?? Clutter.EventPhase.CAPTURE;
     const allowTouch = params.allowTouch ?? false;
     delete params.allowTouch;
 
@@ -321,18 +329,10 @@ export function createSwipeTracker(
         gestureSpeed
     );
 
-    swipeTracker._touchpadGesture.connect(
-        'begin',
-        swipeTracker._beginTouchpadGesture.bind(swipeTracker)
-    );
-    swipeTracker._touchpadGesture.connect(
-        'update',
-        swipeTracker._updateTouchpadGesture.bind(swipeTracker)
-    );
-    swipeTracker._touchpadGesture.connect(
-        'end',
-        swipeTracker._endTouchpadGesture.bind(swipeTracker)
-    );
+    const handlers = bindTouchpadHandlers(swipeTracker);
+    swipeTracker._touchpadGesture.connect('begin', handlers.begin);
+    swipeTracker._touchpadGesture.connect('update', handlers.update);
+    swipeTracker._touchpadGesture.connect('end', handlers.end);
     swipeTracker.bind_property(
         'enabled',
         swipeTracker._touchpadGesture,

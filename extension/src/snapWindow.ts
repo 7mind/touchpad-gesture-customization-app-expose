@@ -11,6 +11,11 @@ import {ExtSettings} from '../constants.js';
 import {createSwipeTracker, TouchpadSwipeGesture} from './swipeTracker.js';
 import {easeActor, easeAdjustment} from './utils/environment.js';
 import {getVirtualKeyboard, IVirtualKeyboard} from './utils/keyboard.js';
+import {
+    isWindowMaximized,
+    maximizeWindow,
+    unmaximizeWindow,
+} from './utils/compat.js';
 
 const WINDOW_ANIMATION_TIME = 250;
 const UPDATED_WINDOW_ANIMATION_TIME = 150;
@@ -129,12 +134,12 @@ const TilePreview = GObject.registerClass(
                             case GestureMaxUnMaxState.UNMAXIMIZE:
                                 if (this._window.is_fullscreen())
                                     this._window.unmake_fullscreen();
-                                this._window.unmaximize();
+                                unmaximizeWindow(this._window);
                                 break;
                             case GestureMaxUnMaxState.MAXIMIZE:
                                 if (this._window.is_fullscreen())
                                     this._window.unmake_fullscreen();
-                                this._window.maximize();
+                                maximizeWindow(this._window);
                                 break;
                             case GestureMaxUnMaxState.FULLSCREEN:
                                 this._window.make_fullscreen();
@@ -258,7 +263,7 @@ const TilePreview = GObject.registerClass(
 
         private getNormalBox(window: Meta.Window) {
             const normalBox = window.get_frame_rect();
-            if (!window.is_maximized()) return normalBox;
+            if (!isWindowMaximized(window)) return normalBox;
 
             const [width, height] = [
                 Math.round(normalBox.width * 0.05),
@@ -376,7 +381,7 @@ export class SnapWindowExtension implements ISubExtension {
 
         const progress = window.is_fullscreen()
             ? GestureMaxUnMaxState.FULLSCREEN
-            : window.is_maximized()
+            : isWindowMaximized(window)
               ? GestureMaxUnMaxState.MAXIMIZE
               : GestureMaxUnMaxState.UNMAXIMIZE;
 

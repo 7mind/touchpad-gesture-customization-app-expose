@@ -2,11 +2,11 @@ import Clutter from 'gi://Clutter';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 import Gvc from 'gi://Gvc';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Volume from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {createSwipeTracker} from './swipeTracker.js';
 import {ExtSettings, TouchpadConstants} from '../constants.js';
+import {showOsd} from './utils/compat.js';
 
 const VolumeIcons = [
     'audio-volume-muted-symbolic',
@@ -151,12 +151,7 @@ export class VolumeControlGestureExtension implements ISubExtension {
         const icon = Gio.Icon.new_for_string(VolumeIcons[iconIndex]);
         const label = this._sink?.get_port().human_port ?? ''; // Recovered label logic
 
-        Main.osdWindowManager.showAll(
-            icon,
-            label,
-            level,
-            this._maxVolumeLimitRatio
-        );
+        showOsd(icon, label, level, this._maxVolumeLimitRatio);
     }
 
     _gestureBegin(_tracker: SwipeTracker): void {

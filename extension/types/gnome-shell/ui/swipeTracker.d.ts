@@ -39,11 +39,19 @@ declare module 'resource:///org/gnome/shell/ui/swipeTracker.js' {
 
         destroy(): void;
 
-        _beginTouchpadGesture(): void;
+        // GNOME 49+ names.
+        _beginTouchpadGesture?(): void;
 
-        _updateTouchpadGesture(): void;
+        _updateTouchpadGesture?(): void;
 
-        _endTouchpadGesture(): void;
+        _endTouchpadGesture?(): void;
+
+        // GNOME 48 names (renamed in 49).
+        _beginGesture?(): void;
+
+        _updateGesture?(): void;
+
+        _endGesture?(): void;
 
         _history: {
             reset(): void;
