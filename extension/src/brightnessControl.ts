@@ -53,14 +53,23 @@ class ManagerBrightnessBackend implements IBrightnessBackend {
     }
 }
 
-const BrightnessProxy = Gio.DBusProxy.makeProxyWrapper(
-    loadInterfaceXML('org.gnome.SettingsDaemon.Power.Screen')
-) as unknown as new (
+type BrightnessProxyConstructor = new (
     connection: Gio.DBusConnection,
     name: string | null,
     objectPath: string,
     callback?: (proxy: Gio.DBusProxy, error: Error | null) => void
 ) => Gio.DBusProxy;
+
+// Built lazily inside the GNOME 48 backend: the
+// org.gnome.SettingsDaemon.Power.Screen interface XML is no longer bundled on
+// GNOME 49/50, so loadInterfaceXML returns null there. Calling makeProxyWrapper
+// at module scope would throw "Invalid type [object Null]" on every version and
+// abort the whole extension load; defer it to the path that actually needs it.
+function makeBrightnessProxyClass(): BrightnessProxyConstructor {
+    return Gio.DBusProxy.makeProxyWrapper(
+        loadInterfaceXML('org.gnome.SettingsDaemon.Power.Screen')
+    ) as unknown as BrightnessProxyConstructor;
+}
 
 // GNOME 48 backend: read/write brightness through the power D-Bus proxy
 // (Main.brightnessManager does not exist on GNOME 48).
@@ -68,6 +77,7 @@ class DBusBrightnessBackend implements IBrightnessBackend {
     private _proxy: Gio.DBusProxy;
 
     constructor() {
+        const BrightnessProxy = makeBrightnessProxyClass();
         this._proxy = new BrightnessProxy(
             Gio.DBus.session,
             'org.gnome.SettingsDaemon.Power',
