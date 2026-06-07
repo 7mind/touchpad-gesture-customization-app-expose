@@ -46,6 +46,14 @@ npm run update
 gnome-extensions enable touchpad-gesture-customization@coooolapps.com
 ```
 
+If you're updating the extension, make sure the old version is fully uninstalled. Run:
+
+```
+gnome-extensions uninstall touchpad-gesture-customization@coooolapps.com
+```
+
+And log out and log in again.
+
 ## Gestures
 
 | Swipe Gesture                           | Modes    | Fingers  | Direction           |
