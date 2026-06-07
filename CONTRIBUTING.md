@@ -105,7 +105,8 @@ PR review process:
 ---
 
 ## Releases & packaging
-- Releases are zip packages containing the extension folder and a matching metadata.json version.
+- Use `npm run pack` to create releases (it runs `npm run build` then `make pack`). A bare `make pack` will fail without a prior build; `npm run pack` is the supported one-shot entry point.
+- Releases are zip packages with a flat layout: `extension.js`, `metadata.json`, `stylesheet.css`, and directories `assets/`, `ui/`, `schemas/` must all sit at the archive root, not nested under a subfolder.
 - Follow semantic versioning where practical; update metadata.json version and api-version when releasing support for new GNOME versions.
 
 ---

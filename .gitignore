@@ -1,2 +1,9 @@
+.codegraph
+
 build/
 node_modules/
+
+# cq ledger runtime store (not tracked; docs/*.md are the tracked ledger views)
+docs/ledgers.yaml
+docs/.backup/
+docs/.locks/

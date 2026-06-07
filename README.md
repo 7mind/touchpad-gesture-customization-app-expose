@@ -39,6 +39,8 @@ npm install
 npm run update
 ```
 
+This runs the full build→pack→install chain in order: `npm run update` chains `npm run pack && make update`, and `npm run pack` chains `npm run build && make pack`. Direct invocation of `make pack` or `make update` is protected by Makefile guards that fail loudly if prerequisites are missing (no transpiled `extension.js` for pack, or missing/invalid zip for update).
+
 2. Log out and log in
 3. Enable extension via extensions app or via command line
 
