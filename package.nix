@@ -1,6 +1,6 @@
-# Build of this GNOME Shell extension. `src` defaults to this directory so the
-# package builds the repo it lives in; the flake passes `src = self` so the
-# build is pinned to the flake's locked revision.
+# Build of this GNOME Shell extension. The flake passes `src = self`, so the
+# source is pinned by the consumer's flake.lock and needs no maintenance here.
+# When package-lock.json changes, refresh npmDepsHash below with ./update-flake-deps.sh.
 { lib
 , buildNpmPackage
 , glib
