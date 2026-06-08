@@ -28,6 +28,96 @@ Then swipe up will show default overview and swipe down will show an overview of
 
 ## Installation
 
+### Nix / NixOS
+
+This repository is a flake. It exposes the built extension as
+`packages.<system>.default` (also named
+`packages.<system>.gnome-shell-extension-touchpad-gesture-customization-app-expose`).
+The package's `passthru.extensionUuid` carries the extension UUID, so you never
+have to hard-code it.
+
+Add the flake as an input and install the package on a vanilla NixOS
+configuration:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    touchpad-gesture-customization-app-expose.url =
+      "github:7mind/touchpad-gesture-customization-app-expose";
+  };
+
+  outputs = { nixpkgs, touchpad-gesture-customization-app-expose, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ({ pkgs, ... }: {
+          environment.systemPackages = [
+            touchpad-gesture-customization-app-expose.packages.${pkgs.system}.default
+          ];
+        })
+      ];
+    };
+  };
+}
+```
+
+Then rebuild (`sudo nixos-rebuild switch --flake .#myhost`), log out and log
+back in, and enable the extension like any other — via the Extensions app or:
+
+```
+gnome-extensions enable touchpad-gesture-customization@coooolapps.com
+```
+
+The package targets the GNOME Shell versions listed in `metadata.json`; on a
+newer Shell you may need to append the major version to `shell-version` via an
+`overrideAttrs` patch.
+
+#### Optional: declarative enablement
+
+Most users enable extensions imperatively as above. If you instead want the
+extension enabled (and configured) declaratively for every user session, drop
+the `programs.dconf` block below into the same module. It reads the UUID from
+the package rather than repeating the string:
+
+```nix
+({ pkgs, ... }:
+let
+  ext = touchpad-gesture-customization-app-expose.packages.${pkgs.system}.default;
+in {
+  environment.systemPackages = [ ext ];
+
+  programs.dconf = {
+    enable = true;
+    profiles.user.databases = [{
+      settings = {
+        "org/gnome/shell" = {
+          disable-user-extensions = false;
+          enabled-extensions = [ ext.extensionUuid ];
+        };
+
+        # The point of this fork: turn on the app-expose (application overview)
+        # gesture. `overview-navigation-states` opens the app overview on a
+        # downward swipe; exactly one vertical swipe must be set to
+        # `OVERVIEW_NAVIGATION` — pick 3- or 4-finger (4-finger shown here).
+        "org/gnome/shell/extensions/touchpad-gesture-customization" = {
+          overview-navigation-states = "APPLICATION_OVERVIEW_ON_DOWN";
+          vertical-swipe-4-fingers-gesture = "OVERVIEW_NAVIGATION";
+        }
+        # (Optional) free the 3-finger gestures (e.g. for 3-finger drag) by
+        # moving GNOME's defaults off them. Append this `// { … }` or drop it.
+        # If you keep it, leave the OVERVIEW_NAVIGATION swipe above on 4-finger.
+        // {
+          vertical-swipe-3-fingers-gesture = "NONE";
+          horizontal-swipe-3-fingers-gesture = "NONE";
+          pinch-3-finger-gesture = "NONE";
+        };
+      };
+    }];
+  };
+})
+```
+
 ### Manually
 
 1. Install extension
