@@ -5,6 +5,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {SearchController} from 'resource:///org/gnome/shell/ui/searchController.js';
 import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
+import {shouldShowInApplicationOverview} from './appOverviewWindowFilter.js';
 
 // A live Workspace actor as shown in the overview, one per (workspace ×
 // monitor). On secondary monitors with workspaces-only-on-primary its
@@ -12,7 +13,11 @@ import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbn
 type OverviewWorkspace = {
     _layoutFrozenId: number;
     _container: {layout_manager: {layout_frozen: boolean}};
+    _skipTaskbarSignals: Map<Meta.Window, number>;
     containsMetaWindow(window: Meta.Window): boolean;
+    _isMyWindow(window: Meta.Window): boolean;
+    _doAddWindow(window: Meta.Window): void;
+    _addWindowClone(window: Meta.Window): void;
     _doRemoveWindow(window: Meta.Window): void;
 };
 
@@ -68,6 +73,7 @@ export class ApplicationWindowOverview {
 
         this._patchWindowFiltering();
         this._disableSearch();
+        this._addApplicationWorkspaceWindows();
         this._removeFilteredWorkspaceWindows();
         this._unfreezeWorkspaceLayouts();
 
@@ -109,6 +115,7 @@ export class ApplicationWindowOverview {
         }
 
         this._restoreSearch();
+        this._removeWindowsRejectedByRestoredFilter();
         this._restoreWindowFiltering();
 
         if (this._windows.length === 1 && !Main.overview.visible)
@@ -140,8 +147,6 @@ export class ApplicationWindowOverview {
 
     private _patchWindowFiltering(): void {
         const hasWindow = (window: Meta.Window) => this._hasWindow(window);
-        const getWorkspaceIsOverviewWindow = () =>
-            this._workspaceIsOverviewWindow;
         const getThumbnailIsOverviewWindow = () =>
             this._thumbnailIsOverviewWindow;
         const workspacePrototype = Workspace.prototype;
@@ -154,15 +159,7 @@ export class ApplicationWindowOverview {
             this: Workspace,
             window: Meta.Window
         ) {
-            const workspaceIsOverviewWindow = getWorkspaceIsOverviewWindow();
-
-            if (workspaceIsOverviewWindow === undefined)
-                throw new Error('Missing workspace overview window filter');
-
-            return (
-                workspaceIsOverviewWindow.call(this, window) &&
-                hasWindow(window)
-            );
+            return shouldShowInApplicationOverview(window, hasWindow);
         };
 
         thumbnailPrototype._isOverviewWindow = function (
@@ -211,6 +208,48 @@ export class ApplicationWindowOverview {
             windows.forEach(window =>
                 metaWorkspace.emit('window-added', window)
             );
+        }
+    }
+
+    private _addApplicationWorkspaceWindows(): void {
+        for (const workspace of this._getOverviewWorkspaces()) {
+            for (const window of this._windows) {
+                const shouldAdd =
+                    !workspace.containsMetaWindow(window) &&
+                    workspace._isMyWindow(window) &&
+                    shouldShowInApplicationOverview(window, candidate =>
+                        this._hasWindow(candidate)
+                    );
+
+                if (!shouldAdd) continue;
+
+                if (workspace._skipTaskbarSignals.has(window)) {
+                    if (window.get_compositor_private() !== null)
+                        workspace._addWindowClone(window);
+                } else {
+                    workspace._doAddWindow(window);
+                }
+            }
+        }
+    }
+
+    private _removeWindowsRejectedByRestoredFilter(): void {
+        const workspaceIsOverviewWindow = this._workspaceIsOverviewWindow;
+
+        if (workspaceIsOverviewWindow === undefined)
+            throw new Error('Missing workspace overview window filter');
+
+        for (const workspace of this._getOverviewWorkspaces()) {
+            for (const window of this._windows) {
+                if (
+                    workspace.containsMetaWindow(window) &&
+                    !workspaceIsOverviewWindow.call(
+                        workspace as unknown as Workspace,
+                        window
+                    )
+                )
+                    workspace._doRemoveWindow(window);
+            }
         }
     }
 
