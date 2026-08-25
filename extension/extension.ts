@@ -21,6 +21,7 @@ import {CloseWindowExtension} from './src/pinchGestures/closeWindow.js';
 import {ShowNotificationListExtension} from './src/pinchGestures/showNotificationList.js';
 import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
+import {createApplicationGroupedOverviewExtension} from './src/groupedOverviewIntegration.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -89,6 +90,9 @@ export default class TouchpadGestureCustomization extends Extension {
             this._getVerticalSwipeGestureTypeAndFingers();
         const horizontalSwipeToFingersMap =
             this._getHorizontalSwipeGestureTypeAndFingers();
+
+        if (this.settings.get_boolean('group-overview-windows-by-application'))
+            this._extensions.push(createApplicationGroupedOverviewExtension());
 
         /**
          * Overview navigation

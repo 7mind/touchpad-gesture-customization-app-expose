@@ -151,6 +151,11 @@ function bindPrefsSettings(builder: GtkBuilder, settings: Gio.Settings) {
         builder
     );
     bind_boolean_value('enable-vertical-app-gesture', settings, builder);
+    bind_boolean_value(
+        'group-overview-windows-by-application',
+        settings,
+        builder
+    );
 
     bind_boolean_value('allow-minimize-window', settings, builder);
     bind_boolean_value('allow-fullscreen-window', settings, builder);

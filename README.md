@@ -2,6 +2,27 @@
 
 This repository ([7mind/touchpad-gesture-customization-app-expose](https://github.com/7mind/touchpad-gesture-customization-app-expose)) is a downstream fork of [HieuTNg/touchpad-gesture-customization](https://github.com/HieuTNg/touchpad-gesture-customization). It exists primarily to add a macOS-style **App Exposé** behavior to the overview gesture: when configured, swiping down with 3/4 fingers spreads only the windows of the currently focused application, while swiping up keeps the standard GNOME overview / app grid navigation. See the *Application overview on down* mode under *Overview navigation states* in the extension preferences. Changes from this fork may or may not be upstreamed.
 
+The fork also provides an optional **Mission Control-style grouped Overview**. When enabled, the normal window picker lays out applications as primary regions and lays out each application's windows inside its region. The same grouped geometry is used for touchpad swipe-up, `Super`, the hot corner, keyboard shortcuts, and programmatic Overview entry.
+
+### Mission Control-style grouped Overview
+
+Open the extension preferences and enable **Group Overview windows by application**, or run:
+
+```
+gsettings set org.gnome.shell.extensions.touchpad-gesture-customization group-overview-windows-by-application true
+```
+
+This setting is independent of *Overview navigation states*. Combine it with *Application overview on down* for the paired behavior:
+
+```
+swipe up    -> all applications grouped by application
+swipe down  -> current application's windows only
+```
+
+The grouped layout is off by default and targets GNOME Shell 50. It checks the required private Shell interfaces at runtime; an unsupported Shell build keeps the stock Overview instead. GNOME 48–49 users can leave the setting disabled to retain the extension's existing behavior.
+
+### App Exposé gesture setup
+
 In `gnome-extensions-app` settings,
 
 `Overview navigation states` should be set to `Application overview on down`:
@@ -107,6 +128,7 @@ in {
         "org/gnome/shell/extensions/touchpad-gesture-customization" = {
           overview-navigation-states = "APPLICATION_OVERVIEW_ON_DOWN";
           vertical-swipe-4-fingers-gesture = "OVERVIEW_NAVIGATION";
+          group-overview-windows-by-application = true;
         }
         # (Optional) free the 3-finger gestures (e.g. for 3-finger drag) by
         # moving GNOME's defaults off them. Append this `// { … }` or drop it.
@@ -203,6 +225,7 @@ And log out and log in again.
 - Enabling minimizing window gesture for Window Manipulation will disable snapping/tiling gesture.
 - If you are using an older version of GNOME, there might be a bug which prevent the extension from detecting **hold and swipe gesture** and **pinch gesture**. If you face this problem, the gesture can only work if the mouse pointer is pointed at the desktop or top panel.
 - (\*\*) **App Exposé / current application windows** is exposed as a sub-mode of the existing Overview gesture rather than a standalone gesture. Set *Overview navigation states* to *Application overview on down* in the extension preferences (see *Customization* below). With this mode active, swiping up still opens the regular overview / app grid; swiping down past a small threshold filters the overview to windows of the currently focused application (similar to macOS App Exposé). Reversing direction within the same swipe restores the regular overview. The mode falls back to the standard overview when no app is focused or when no app windows are eligible for spreading.
+- **Grouped Overview** is a persistent normal-window-picker policy, not a gesture mode. It leaves workspace thumbnails and individual `WindowPreview` interactions under GNOME Shell's control.
 
 ## Customization
 
