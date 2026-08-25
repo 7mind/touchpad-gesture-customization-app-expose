@@ -1,10 +1,4 @@
-<img src="logo.svg" alt="Logo" width="75 " height="75" align="right">
-
-# Touchpad Gesture Customization #
-
-This extension modifies and extends existing touchpad gestures on GNOME using Wayland. This project is a fork of [gnome-gesture-improvements](https://github.com/harshadgavali/gnome-gesture-improvements). Since the original project seems to be no longer maintained, I setup this project with the aim of taking over the development and maintenance of this wonderful extension that I relied on for daily use.
-
-### About this fork
+# About this fork
 
 This repository ([7mind/touchpad-gesture-customization-app-expose](https://github.com/7mind/touchpad-gesture-customization-app-expose)) is a downstream fork of [HieuTNg/touchpad-gesture-customization](https://github.com/HieuTNg/touchpad-gesture-customization). It exists primarily to add a macOS-style **App Exposé** behavior to the overview gesture: when configured, swiping down with 3/4 fingers spreads only the windows of the currently focused application, while swiping up keeps the standard GNOME overview / app grid navigation. See the *Application overview on down* mode under *Overview navigation states* in the extension preferences. Changes from this fork may or may not be upstreamed.
 
@@ -19,6 +13,16 @@ At least one vertical swipe gesture should be set to `Application overview`:
 <img width="689" height="568" alt="Image" src="./swipe-setting.png" />
 
 Then swipe up will show default overview and swipe down will show an overview of current application's windows only.
+
+<hr/>
+<hr/>
+<hr/>
+
+<img src="logo.svg" alt="Logo" width="75 " height="75" align="right">
+
+# Touchpad Gesture Customization #
+
+This extension modifies and extends existing touchpad gestures on GNOME using Wayland. This project is a fork of [gnome-gesture-improvements](https://github.com/harshadgavali/gnome-gesture-improvements). Since the original project seems to be no longer maintained, I setup this project with the aim of taking over the development and maintenance of this wonderful extension that I relied on for daily use.
 
 **Note**:
 - ```main``` branch contains latest changes which may not work on older version of GNOME, please choose the correct branch if install from source.
