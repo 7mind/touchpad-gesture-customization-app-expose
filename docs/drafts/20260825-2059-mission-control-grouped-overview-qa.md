@@ -31,7 +31,7 @@ nix run .#gnome-49
 nix run .#gnome-50
 ```
 
-The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and dconf state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire daemon. The host display connection is shared, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
+The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and dconf state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The host display connection is shared, and the host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
 
 ### Configuration and lifecycle
 

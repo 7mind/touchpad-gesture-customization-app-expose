@@ -20,6 +20,21 @@ runCommand "nested-gnome-${shellMajorVersion}-check" { } ''
   ${gnugrep}/bin/grep -q 'XDG_CONFIG_HOME="$profile/config"' ${launcher}/bin/nested-gnome-${shellMajorVersion}
   ${gnugrep}/bin/grep -q 'XDG_RUNTIME_DIR="$profile/runtime"' ${launcher}/bin/nested-gnome-${shellMajorVersion}
   ${gnugrep}/bin/grep -q 'dbus-run-session' ${launcher}/bin/nested-gnome-${shellMajorVersion}
+  ${
+    if presentationOption == "--devkit" then
+      ''
+        session_launcher=$(${gnugrep}/bin/grep -o '/nix/store/[^" ]*-nested-gnome-${shellMajorVersion}-session/bin/nested-gnome-${shellMajorVersion}-session' ${launcher}/bin/nested-gnome-${shellMajorVersion})
+        test -n "$session_launcher"
+        if ${gnugrep}/bin/grep -q -- '--virtual-monitor' "$session_launcher"; then
+          exit 1
+        fi
+        ${gnugrep}/bin/grep -q 'wireplumber' "$session_launcher"
+        ${gnugrep}/bin/grep -q 'DBUS_SYSTEM_BUS_ADDRESS:-' "$session_launcher"
+        ${gnugrep}/bin/grep -q '/run/dbus/system_bus_socket' "$session_launcher"
+      ''
+    else
+      "true"
+  }
   test -f ${extension}/share/gnome-shell/extensions/${extensionUuid}/metadata.json
   test -f ${extension}/share/gnome-shell/extensions/${extensionUuid}/schemas/gschemas.compiled
   ${gnugrep}/bin/grep -q 'group-overview-by-application' ${extension}/share/gnome-shell/extensions/${extensionUuid}/schemas/org.gnome.shell.extensions.touchpad-gesture-customization.gschema.xml

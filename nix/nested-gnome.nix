@@ -16,6 +16,7 @@
   extensionUuid,
   presentationMode,
   shellMajorVersion,
+  wireplumber,
 }:
 
 assert presentationMode == "nested-x11" || presentationMode == "mutter-devkit";
@@ -30,14 +31,16 @@ let
       gnome-calculator
       gnome-shell
     ]
-    ++ lib.optionals usesMutterDevkit [ pipewire ]
+    ++ lib.optionals usesMutterDevkit [
+      pipewire
+      wireplumber
+    ]
   );
   shellArguments =
     if usesMutterDevkit then
       [
         "--devkit"
         "--no-x11"
-        "--virtual-monitor=1440x900@60.0"
       ]
     else
       [
@@ -56,14 +59,20 @@ let
       gnome-shell
       gnugrep
     ]
-    ++ lib.optionals usesMutterDevkit [ pipewire ];
+    ++ lib.optionals usesMutterDevkit [
+      pipewire
+      wireplumber
+    ];
     text = ''
       profile="$1"
       nested_display="touchpad-gesture-gnome-${shellMajorVersion}-$PPID"
       extension_dir="$XDG_DATA_HOME/gnome-shell/extensions/${extensionUuid}"
       shell_pid=""
       child_pids=()
-      export DBUS_SYSTEM_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"
+
+      if [[ -z "''${DBUS_SYSTEM_BUS_ADDRESS:-}" ]] && [[ ! -S /run/dbus/system_bus_socket ]]; then
+        export DBUS_SYSTEM_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"
+      fi
 
       cleanup() {
         local pid
@@ -108,6 +117,28 @@ let
 
         if [[ "$pipewire_ready" -ne 1 ]]; then
           printf 'PipeWire did not become ready within 10 seconds.\n' >&2
+          exit 1
+        fi
+
+        wireplumber &
+        child_pids+=("$!")
+
+        wireplumber_ready=0
+        for _ in $(seq 1 40); do
+          if ! kill -0 "''${child_pids[1]}" 2>/dev/null; then
+            wait "''${child_pids[1]}"
+          fi
+
+          if wpctl status >/dev/null 2>&1; then
+            wireplumber_ready=1
+            break
+          fi
+
+          sleep 0.25
+        done
+
+        if [[ "$wireplumber_ready" -ne 1 ]]; then
+          printf 'WirePlumber did not become ready within 10 seconds.\n' >&2
           exit 1
         fi
       ''}

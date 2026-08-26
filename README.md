@@ -125,10 +125,11 @@ extension preferences in the nested session. Close the nested window or press
 
 These launchers provide configuration isolation, not a security boundary. They
 use a temporary HOME and XDG directories, a private D-Bus/dconf profile, and,
-for GNOME 49–50, a private PipeWire daemon. Only the host display connection is
-shared. Normal exit deletes the temporary profile, and no host logout or Shell
-restart is required. The first invocation may download a multi-gigabyte GNOME
-closure; later runs use the Nix store cache.
+for GNOME 49–50, a private PipeWire/WirePlumber media graph. Only the host
+display connection is always shared; the host system bus is used when available.
+Normal exit deletes the temporary profile, and no host logout or Shell restart is required. The first
+invocation may download a multi-gigabyte GNOME closure; later runs use the Nix
+store cache.
 
 The grouped Overview setting starts as `true` inside the temporary profile. On
 GNOME 48–49 the preference must still appear insensitive and off, and stock
