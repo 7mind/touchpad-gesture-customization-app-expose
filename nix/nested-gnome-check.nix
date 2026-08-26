@@ -27,6 +27,9 @@ runCommand "nested-gnome-${shellMajorVersion}-check" { } ''
   test "$nested_display_line" -lt "$extension_probe_line"
   ${gnugrep}/bin/grep -q 'dbus-update-activation-environment WAYLAND_DISPLAY' "$session_launcher"
   ${gnugrep}/bin/grep -q 'env -u DISPLAY -u WAYLAND_DISPLAY' ${launcher}/bin/nested-gnome-${shellMajorVersion}
+  ${gnugrep}/bin/grep -q 'GSETTINGS_BACKEND=keyfile' "$session_launcher"
+  ${gnugrep}/bin/grep -q 'TOUCHPAD_GESTURE_NESTED_SCROLL_TEST=1' "$session_launcher"
+  ${gnugrep}/bin/grep -q "overview-navigation-states 'APPLICATION_OVERVIEW_ON_DOWN'" "$session_launcher"
   ${
     if presentationOption == "--devkit" then
       ''

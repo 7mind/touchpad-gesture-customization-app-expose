@@ -19,8 +19,9 @@ nix flake check
 - [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 - [x] The pinned GNOME 48, 49, and 50 closures expose the required compositor mode, package the extension and compiled schema, and build ShellCheck-clean isolated launchers.
 - [x] The launchers remove host display variables from private D-Bus activation and direct extension preferences and test applications to the nested Wayland display.
+- [x] The nested smooth-scroll controller translates begin, update, reversal, explicit end, timeout end, and destruction without duplicate gesture transitions.
 
-The Node suite covers the pure layout and lifecycle controller. The Nix checks cover the versioned launcher and package contracts. Neither can load GNOME Shell's `gi://` and `resource:///` production modules and exercise interactive rendering, so the checks below are the production-adapter leg.
+The Node suite covers the pure layout, lifecycle, and nested scroll controllers. The Nix checks cover the versioned launcher and package contracts. Neither can load GNOME Shell's `gi://` and `resource:///` production modules and exercise interactive rendering, so the checks below are the production-adapter leg.
 
 ## Requires a live GNOME Shell session
 
@@ -32,7 +33,9 @@ nix run .#gnome-49
 nix run .#gnome-50
 ```
 
-The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and dconf state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The nested compositor connects to the host display, while test applications receive only the nested Wayland display. The host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
+The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and keyfile-backed GSettings state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The nested compositor connects to the host display, while test applications receive only the nested Wayland display. The host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
+
+Each isolated profile selects *App overview on down*. Focus one of the two terminal windows and use two-finger vertical scrolling over the nested display as the swipe proxy. Reverse direction before lifting to test mid-gesture restoration. A zero-delta scroll stop ends the proxy gesture; 250 ms without another update provides the legacy-session fallback. This path tests App Overview through `SwipeTracker`, but does not test raw three/four-finger recognition, hold gestures, or libinput routing.
 
 ### Configuration and lifecycle
 
@@ -55,8 +58,8 @@ The first run may download a multi-gigabyte GNOME closure. Each launcher uses a 
 
 ### App Exposé composition
 
-- [ ] Swipe down from the desktop; only the focused application's windows remain and use the available picker area.
-- [ ] Reverse direction during the same gesture; all applications return in grouped geometry without stale previews.
+- [ ] Scroll down with two fingers over the nested display; only the focused application's windows remain and use the available picker area.
+- [ ] Reverse two-finger scroll direction before lifting; all applications return in grouped geometry without stale previews.
 - [ ] Test with no focused application and with a focused application that has one window; existing fallback and activation behavior remains.
 - [ ] Minimize a current-application window and confirm it remains represented as intended by App Exposé.
 - [ ] Swipe up after entering App Exposé and verify the normal grouped state is restored.

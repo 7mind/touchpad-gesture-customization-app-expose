@@ -123,9 +123,17 @@ Mutter Development Kit. The launcher opens two terminals, Calculator, and the
 extension preferences in the nested session. Close the nested window or press
 `Ctrl-C` in the launching terminal to stop it.
 
+The isolated profile selects *App overview on down*. Focus one of the two
+terminal windows, then use two-finger vertical scrolling over the nested
+display as the swipe proxy. Scroll down to enter App Overview, or reverse
+upward before lifting to restore the normal Overview. This exercises the
+extension's interactive `SwipeTracker` path, but not libinput finger-count or
+hold-gesture recognition.
+
 These launchers provide configuration isolation, not a security boundary. They
-use a temporary HOME and XDG directories, a private D-Bus/dconf profile, and,
-for GNOME 49–50, a private PipeWire/WirePlumber media graph. Only the host
+use a temporary HOME and XDG directories, a private D-Bus session and
+keyfile-backed GSettings state, and, for GNOME 49–50, a private
+PipeWire/WirePlumber media graph. Only the host
 display connection used by the nested compositor is shared; test applications
 and extension preferences receive only the nested Wayland display. The host
 system bus is used when available.
@@ -133,10 +141,10 @@ Normal exit deletes the temporary profile, and no host logout or Shell restart i
 invocation may download a multi-gigabyte GNOME closure; later runs use the Nix
 store cache.
 
-The grouped Overview setting starts as `true` inside the temporary profile. On
-GNOME 48–49 the preference must still appear insensitive and off, and stock
-Overview behavior must remain active. GNOME 50 should expose the enabled
-grouped behavior. See the [manual QA checklist](./docs/drafts/20260825-2059-mission-control-grouped-overview-qa.md)
+The grouped Overview setting also starts as `true` inside the temporary
+profile. On GNOME 48–49 the preference must still appear insensitive and off,
+and stock Overview behavior must remain active. GNOME 50 should expose the
+enabled grouped behavior. See the [manual QA checklist](./docs/drafts/20260825-2059-mission-control-grouped-overview-qa.md)
 for the complete matrix.
 
 #### Optional: declarative enablement

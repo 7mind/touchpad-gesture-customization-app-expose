@@ -104,7 +104,10 @@ let
       mkdir -p "$XDG_DATA_HOME/gnome-shell/extensions"
       ln -s "${extension}/share/gnome-shell/extensions/${extensionUuid}" "$extension_dir"
       export GSETTINGS_SCHEMA_DIR="$extension_dir/schemas"
+      export GSETTINGS_BACKEND=keyfile
       gsettings set org.gnome.shell.extensions.touchpad-gesture-customization group-overview-by-application true
+      gsettings set org.gnome.shell.extensions.touchpad-gesture-customization overview-navigation-states 'APPLICATION_OVERVIEW_ON_DOWN'
+      export TOUCHPAD_GESTURE_NESTED_SCROLL_TEST=1
 
       ${lib.optionalString (!usesMutterDevkit) "unset WAYLAND_DISPLAY"}
       ${lib.optionalString usesMutterDevkit ''
@@ -203,6 +206,7 @@ let
 
       printf 'GNOME Shell %s is running with an isolated profile at %s.\n' '${shellMajorVersion}' "$profile"
       printf 'The grouped Overview setting is stored as true for compatibility testing.\n'
+      printf 'Two-finger vertical scrolling inside the nested display simulates the App Overview swipe.\n'
       wait "$shell_pid"
     '';
   };

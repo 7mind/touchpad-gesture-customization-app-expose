@@ -96,9 +96,7 @@ export default class TouchpadGestureCustomization extends Extension {
         const groupedOverviewAvailability =
             resolveApplicationGroupedOverviewAvailability(
                 Config.PACKAGE_VERSION,
-                this.settings.get_boolean(
-                    'group-overview-by-application'
-                )
+                this.settings.get_boolean('group-overview-by-application')
             );
 
         if (groupedOverviewAvailability.enabled)
@@ -119,7 +117,8 @@ export default class TouchpadGestureCustomization extends Extension {
 
         const overviewRoundTripGestureExtension =
             new OverviewRoundTripGestureExtension(
-                this.settings.get_enum('overview-navigation-states')
+                this.settings.get_enum('overview-navigation-states'),
+                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1'
             );
 
         // By default, disable overview navigation when user doesn't assign any gestures
