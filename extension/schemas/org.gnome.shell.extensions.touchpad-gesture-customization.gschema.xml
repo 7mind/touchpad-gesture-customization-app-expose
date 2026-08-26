@@ -86,6 +86,10 @@
       <default>false</default>
       <description>Enable vertical swipe for app gesture</description>
     </key>
+    <key name='group-overview-by-application' type='b'>
+      <default>false</default>
+      <description>Group normal Overview windows into application regions</description>
+    </key>
     <key name="pinch-3-finger-gesture" enum="org.gnome.shell.extensions.touchpad-gesture-customization.pinch-gestures">
       <default>'CLOSE_DOCUMENT'</default>
       <description>Gesture action for 3 finger pinch</description>

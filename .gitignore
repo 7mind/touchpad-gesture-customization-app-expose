@@ -7,3 +7,4 @@ node_modules/
 docs/ledgers.yaml
 docs/.backup/
 docs/.locks/
+.codegraph/
