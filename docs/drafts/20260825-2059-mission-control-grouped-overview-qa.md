@@ -18,6 +18,7 @@ nix flake check
 - [x] The owned patch installs and restores cleanly, preserves a later foreign patch, fails closed when unsupported, and falls back to stock slots after invalid input.
 - [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 - [x] The pinned GNOME 48, 49, and 50 closures expose the required compositor mode, package the extension and compiled schema, and build ShellCheck-clean isolated launchers.
+- [x] The launchers remove host display variables from private D-Bus activation and direct extension preferences and test applications to the nested Wayland display.
 
 The Node suite covers the pure layout and lifecycle controller. The Nix checks cover the versioned launcher and package contracts. Neither can load GNOME Shell's `gi://` and `resource:///` production modules and exercise interactive rendering, so the checks below are the production-adapter leg.
 
@@ -31,11 +32,12 @@ nix run .#gnome-49
 nix run .#gnome-50
 ```
 
-The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and dconf state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The host display connection is shared, and the host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
+The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and dconf state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The nested compositor connects to the host display, while test applications receive only the nested Wayland display. The host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
 
 ### Configuration and lifecycle
 
 - [ ] Record the host extension's dconf subtree before each run; after normal exit, confirm it is byte-for-byte unchanged and the temporary profile reported by the launcher no longer exists.
+- [ ] Confirm both terminals, Calculator, and extension preferences appear inside the nested compositor and no new test window appears directly in the host session.
 - [ ] With `group-overview-by-application=false`, GNOME 50 uses stock Overview geometry and App Exposé still works.
 - [ ] Enable the option while Overview is visible; existing workspaces relayout without stale or duplicate previews.
 - [ ] Disable the option while Overview is visible; stock geometry returns immediately.

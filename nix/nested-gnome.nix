@@ -10,6 +10,7 @@
   gnome-calculator,
   gnome-shell,
   gnugrep,
+  mesa,
   pipewire,
   xdpyinfo,
   extension,
@@ -46,12 +47,14 @@ let
       [
         "--nested"
         "--wayland"
+        "--no-x11"
       ];
   session = writeShellApplication {
     name = "nested-gnome-${shellMajorVersion}-session";
     runtimeInputs = [
       bashInteractive
       coreutils
+      dbus
       dconf
       foot
       glib
@@ -65,6 +68,8 @@ let
     ];
     text = ''
       profile="$1"
+      host_display_kind="$2"
+      host_display_value="$3"
       nested_display="touchpad-gesture-gnome-${shellMajorVersion}-$PPID"
       extension_dir="$XDG_DATA_HOME/gnome-shell/extensions/${extensionUuid}"
       shell_pid=""
@@ -73,6 +78,11 @@ let
       if [[ -z "''${DBUS_SYSTEM_BUS_ADDRESS:-}" ]] && [[ ! -S /run/dbus/system_bus_socket ]]; then
         export DBUS_SYSTEM_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"
       fi
+
+      ${lib.optionalString (!usesMutterDevkit) ''
+        export __EGL_VENDOR_LIBRARY_FILENAMES="${mesa}/share/glvnd/egl_vendor.d/50_mesa.json"
+        export LIBGL_DRIVERS_PATH="${mesa}/lib/dri"
+      ''}
 
       cleanup() {
         local pid
@@ -142,11 +152,22 @@ let
           exit 1
         fi
       ''}
+      host_display_environment=(env -u DISPLAY -u WAYLAND_DISPLAY)
+      if [[ "$host_display_kind" = "wayland" ]]; then
+        host_display_environment+=("WAYLAND_DISPLAY=$host_display_value")
+      else
+        host_display_environment+=("DISPLAY=$host_display_value")
+      fi
+
       MUTTER_DEBUG_DUMMY_MODE_SPECS="1440x900@60.0" \
+        "''${host_display_environment[@]}" \
         gnome-shell \
           ${lib.escapeShellArgs shellArguments} \
           --wayland-display="$nested_display" &
       shell_pid=$!
+      export WAYLAND_DISPLAY="$nested_display"
+      unset DISPLAY
+      dbus-update-activation-environment WAYLAND_DISPLAY
 
       ready=0
       for _ in $(seq 1 120); do
@@ -171,9 +192,6 @@ let
       gnome-extensions enable "${extensionUuid}"
       gnome-extensions info "${extensionUuid}"
 
-      export WAYLAND_DISPLAY="$nested_display"
-      unset DISPLAY
-
       foot --title="GNOME ${shellMajorVersion} test window A" &
       child_pids+=("$!")
       foot --title="GNOME ${shellMajorVersion} test window B" &
@@ -197,6 +215,9 @@ writeShellApplication {
     xdpyinfo
   ];
   text = ''
+    host_display_kind=""
+    host_display_value=""
+
     ${
       if usesMutterDevkit then
         ''
@@ -214,9 +235,11 @@ writeShellApplication {
           fi
 
           if [[ -n "$host_wayland_socket" ]]; then
-            export WAYLAND_DISPLAY="$host_wayland_socket"
+            host_display_kind="wayland"
+            host_display_value="$host_wayland_socket"
           elif [[ -n "''${DISPLAY:-}" ]] && xdpyinfo >/dev/null 2>&1; then
-            unset WAYLAND_DISPLAY
+            host_display_kind="x11"
+            host_display_value="$DISPLAY"
           else
             printf 'A reachable host Wayland or Xwayland display is required. Run this command from a terminal inside the graphical login session.\n' >&2
             exit 1
@@ -233,6 +256,9 @@ writeShellApplication {
             printf 'The host Xwayland display is inaccessible. Run this command from a terminal inside the graphical login session and verify DISPLAY/XAUTHORITY.\n' >&2
             exit 1
           fi
+
+          host_display_kind="x11"
+          host_display_value="$DISPLAY"
         ''
     }
 
@@ -256,7 +282,8 @@ writeShellApplication {
       "$profile/tmp"
     chmod 700 "$profile/runtime"
 
-    HOME="$profile/home" \
+    env -u DISPLAY -u WAYLAND_DISPLAY \
+      HOME="$profile/home" \
       XDG_CONFIG_HOME="$profile/config" \
       XDG_DATA_HOME="$profile/data" \
       XDG_CACHE_HOME="$profile/cache" \
@@ -264,6 +291,7 @@ writeShellApplication {
       XDG_RUNTIME_DIR="$profile/runtime" \
       XDG_DATA_DIRS="${dataDirectories}" \
       TMPDIR="$profile/tmp" \
-      dbus-run-session -- "${session}/bin/nested-gnome-${shellMajorVersion}-session" "$profile"
+      dbus-run-session -- "${session}/bin/nested-gnome-${shellMajorVersion}-session" \
+        "$profile" "$host_display_kind" "$host_display_value"
   '';
 }
