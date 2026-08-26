@@ -17,6 +17,7 @@
   extensionUuid,
   presentationMode,
   shellMajorVersion,
+  wayland-utils,
   wireplumber,
 }:
 
@@ -61,6 +62,7 @@ let
       gnome-calculator
       gnome-shell
       gnugrep
+      wayland-utils
     ]
     ++ lib.optionals usesMutterDevkit [
       pipewire
@@ -179,6 +181,7 @@ let
         fi
 
         if [[ -S "$XDG_RUNTIME_DIR/$nested_display" ]] && \
+          wayland-info 2>/dev/null | grep -q "interface: 'wl_output'" && \
           gnome-extensions info "${extensionUuid}" >/dev/null 2>&1; then
           ready=1
           break
@@ -206,7 +209,7 @@ let
 
       printf 'GNOME Shell %s is running with an isolated profile at %s.\n' '${shellMajorVersion}' "$profile"
       printf 'The grouped Overview setting is stored as true for compatibility testing.\n'
-      printf 'Two-finger vertical scrolling inside the nested display simulates the App Overview swipe.\n'
+      printf 'Scroll up with two fingers inside the nested display to simulate the App Overview swipe.\n'
       wait "$shell_pid"
     '';
   };

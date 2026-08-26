@@ -13,6 +13,8 @@ function createHarness(prototype) {
             resolutions++;
             return window.appKey;
         },
+        resolveFallbackSource: window =>
+            window.frame ?? {x: 0, y: 0, width: 0, height: 0},
         invalidateLayouts: () => invalidations++,
         report: (message, error) => reports.push({message, error}),
     });
@@ -93,15 +95,56 @@ function createLayout(prototype, windows) {
         width: 1200,
         height: 700,
     });
+    const transientSlots = layout._layoutStrategy.computeWindowSlots(
+        groupedLayout,
+        {
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+        }
+    );
 
     assert.equal(slots.length, 2);
     assert.equal(slots[0][4], layout._sortedWindows[0]);
     assert.equal(slots[1][4], layout._sortedWindows[1]);
+    assert.deepEqual(transientSlots, [[1, 2, 3, 4, 'stock']]);
     assert.equal(harness.resolutions(), 2);
 
     harness.extension.destroy();
     assert.equal(prototype._createBestLayout, original);
     assert.equal(harness.invalidations(), 2);
+    assert.deepEqual(harness.reports, []);
+}
+
+{
+    const {prototype} = createSupportedPrototype();
+    const harness = createHarness(prototype);
+    const preview = {
+        metaWindow: {
+            appKey: 'browser',
+            frame: {x: 100, y: 50, width: 800, height: 600},
+        },
+        boundingBox: {x: 0, y: 0, width: 0, height: 0},
+    };
+    const layout = createLayout(prototype, [preview]);
+
+    harness.extension.apply();
+    const groupedLayout = layout._createBestLayout({
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 900,
+    });
+    const slots = layout._layoutStrategy.computeWindowSlots(groupedLayout, {
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 900,
+    });
+
+    assert.equal(slots.length, 1);
+    assert.equal(slots[0][4], preview);
     assert.deepEqual(harness.reports, []);
 }
 
@@ -139,6 +182,34 @@ function createLayout(prototype, windows) {
         {
             metaWindow: {appKey: 'invalid'},
             boundingBox: {x: 0, y: 0, width: 0, height: 600},
+        },
+    ]);
+
+    harness.extension.apply();
+    const groupedLayout = layout._createBestLayout({
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 900,
+    });
+    const slots = layout._layoutStrategy.computeWindowSlots(groupedLayout, {
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 900,
+    });
+
+    assert.deepEqual(slots, [[1, 2, 3, 4, 'stock']]);
+    assert.deepEqual(harness.reports, []);
+}
+
+{
+    const {prototype} = createSupportedPrototype();
+    const harness = createHarness(prototype);
+    const layout = createLayout(prototype, [
+        {
+            metaWindow: {appKey: 'invalid'},
+            boundingBox: {x: 0, y: 0, width: -1, height: 600},
         },
     ]);
 

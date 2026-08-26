@@ -1,6 +1,7 @@
 import {
     createGroupedOverviewLayoutOptions,
     GroupedOverviewLayoutEngine,
+    LayoutAreaTooSmallError,
     type GroupedOverviewWindow,
     type LayoutRectangle,
 } from './groupedOverviewLayout.js';
@@ -49,6 +50,18 @@ type GetWindowSlots<TPreview> = (
 type AdjustSpacingAndPadding<TPreview> =
     GroupedWorkspaceLayout<TPreview>['_adjustSpacingAndPadding'];
 
+function isPendingAllocation(rectangle: LayoutRectangle): boolean {
+    return (
+        Number.isFinite(rectangle.x) &&
+        Number.isFinite(rectangle.y) &&
+        Number.isFinite(rectangle.width) &&
+        Number.isFinite(rectangle.height) &&
+        rectangle.width >= 0 &&
+        rectangle.height >= 0 &&
+        (rectangle.width === 0 || rectangle.height === 0)
+    );
+}
+
 export type GroupedWorkspaceLayoutPrototype<TPreview> = {
     _createBestLayout?: CreateBestLayout<TPreview>;
     _getWindowSlots?: GetWindowSlots<TPreview>;
@@ -58,6 +71,7 @@ export type GroupedWorkspaceLayoutPrototype<TPreview> = {
 export type ApplicationGroupedOverviewDependencies<TPreview, TWindow> = {
     workspaceLayoutPrototype: GroupedWorkspaceLayoutPrototype<TPreview> | null;
     resolveAppKey(window: TWindow): string | null;
+    resolveFallbackSource(window: TWindow): LayoutRectangle;
     invalidateLayouts(): void;
     report(message: string, error: unknown | null): void;
 };
@@ -99,10 +113,11 @@ class ApplicationGroupedLayoutStrategy<
                 slot.item,
             ]);
         } catch (error) {
-            this._report(
-                'Grouped Overview slot calculation failed; using the stock layout',
-                error
-            );
+            if (!(error instanceof LayoutAreaTooSmallError))
+                this._report(
+                    'Grouped Overview slot calculation failed; using the stock layout',
+                    error
+                );
             return this._fallbackStrategy.computeWindowSlots(
                 this._fallbackLayout,
                 area
@@ -193,18 +208,34 @@ export class ApplicationGroupedOverviewExtension<
                     Math.max(rowSpacing, columnSpacing)
                 );
                 const windows: GroupedOverviewWindow<TPreview>[] =
-                    this._sortedWindows.map(preview => ({
-                        item: preview,
-                        groupKey: dependencies.resolveAppKey(
-                            preview.metaWindow
-                        ),
-                        source: {
+                    this._sortedWindows.map(preview => {
+                        const source = {
                             x: preview.boundingBox.x,
                             y: preview.boundingBox.y,
                             width: preview.boundingBox.width,
                             height: preview.boundingBox.height,
-                        },
-                    }));
+                        };
+
+                        return {
+                            item: preview,
+                            groupKey: dependencies.resolveAppKey(
+                                preview.metaWindow
+                            ),
+                            source: isPendingAllocation(source)
+                                ? dependencies.resolveFallbackSource(
+                                      preview.metaWindow
+                                  )
+                                : source,
+                        };
+                    });
+
+                if (
+                    windows.some(window => isPendingAllocation(window.source))
+                ) {
+                    this._layoutStrategy = fallbackStrategy;
+                    return fallbackLayout;
+                }
+
                 const groupedLayout = new GroupedOverviewLayoutEngine(
                     windows,
                     options

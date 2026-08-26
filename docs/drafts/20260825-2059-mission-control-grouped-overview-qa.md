@@ -18,8 +18,9 @@ nix flake check
 - [x] The owned patch installs and restores cleanly, preserves a later foreign patch, fails closed when unsupported, and falls back to stock slots after invalid input.
 - [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 - [x] The pinned GNOME 48, 49, and 50 closures expose the required compositor mode, package the extension and compiled schema, and build ShellCheck-clean isolated launchers.
-- [x] The launchers remove host display variables from private D-Bus activation and direct extension preferences and test applications to the nested Wayland display.
-- [x] The nested smooth-scroll controller translates begin, update, reversal, explicit end, timeout end, and destruction without duplicate gesture transitions.
+- [x] The launchers remove host display variables from private D-Bus activation, wait for a nested Wayland output, and direct extension preferences and test applications to that display.
+- [x] The nested scroll adapter normalizes smooth and discrete vertical events, ignores horizontal events, captures handled scrolls before stock workspace navigation, and translates begin, update, reversal, explicit end, timeout end, and destruction without duplicate gesture transitions.
+- [x] Transient zero-sized previews and Overview areas too small for configured gaps retain stock layout for that allocation pass without an error; an allocated window frame is used when available, while malformed negative geometry still reports the invariant failure.
 
 The Node suite covers the pure layout, lifecycle, and nested scroll controllers. The Nix checks cover the versioned launcher and package contracts. Neither can load GNOME Shell's `gi://` and `resource:///` production modules and exercise interactive rendering, so the checks below are the production-adapter leg.
 
@@ -35,7 +36,7 @@ nix run .#gnome-50
 
 The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and keyfile-backed GSettings state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The nested compositor connects to the host display, while test applications receive only the nested Wayland display. The host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
 
-Each isolated profile selects *App overview on down*. Focus one of the two terminal windows and use two-finger vertical scrolling over the nested display as the swipe proxy. Reverse direction before lifting to test mid-gesture restoration. A zero-delta scroll stop ends the proxy gesture; 250 ms without another update provides the legacy-session fallback. This path tests App Overview through `SwipeTracker`, but does not test raw three/four-finger recognition, hold gestures, or libinput routing.
+Each isolated profile selects _App overview on down_. Focus one of the two terminal windows and scroll up with two fingers over the nested display as the swipe proxy; with natural scrolling, move the fingers downward. Reverse direction before the proxy gesture ends to test mid-gesture restoration. A zero-delta smooth-scroll stop ends the proxy gesture; 250 ms without another update ends a discrete or interrupted sequence. This path tests App Overview through `SwipeTracker`, but does not test raw three/four-finger recognition, hold gestures, or libinput routing.
 
 ### Configuration and lifecycle
 
@@ -58,7 +59,7 @@ Each isolated profile selects *App overview on down*. Focus one of the two termi
 
 ### App Exposé composition
 
-- [ ] Scroll down with two fingers over the nested display; only the focused application's windows remain and use the available picker area.
+- [ ] Scroll up with two fingers over the nested display; only the focused application's windows remain and use the available picker area.
 - [ ] Reverse two-finger scroll direction before lifting; all applications return in grouped geometry without stale previews.
 - [ ] Test with no focused application and with a focused application that has one window; existing fallback and activation behavior remains.
 - [ ] Minimize a current-application window and confirm it remains represented as intended by App Exposé.

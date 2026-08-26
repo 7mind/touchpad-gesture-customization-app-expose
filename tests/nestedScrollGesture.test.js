@@ -1,7 +1,10 @@
 'use strict';
 
 import assert from 'node:assert/strict';
-import {NestedScrollGestureController} from '../build/common/nestedScrollGesture.js';
+import {
+    NestedScrollGestureController,
+    normalizeNestedScrollSample,
+} from '../build/common/nestedScrollGesture.js';
 
 class FakeScheduler {
     callbacks = new Map();
@@ -27,8 +30,8 @@ class FakeScheduler {
     }
 }
 
-function sample(time, dx, dy, smooth = true) {
-    return {time, x: 40, y: 60, dx, dy, smooth};
+function sample(time, dx, dy) {
+    return {time, x: 40, y: 60, dx, dy};
 }
 
 function createHarness() {
@@ -49,9 +52,37 @@ function createHarness() {
 }
 
 {
+    const input = {
+        time: 1,
+        x: 40,
+        y: 60,
+        dx: 2,
+        dy: -3,
+        direction: 'smooth',
+    };
+
+    assert.deepEqual(normalizeNestedScrollSample(input), sample(1, 2, -3));
+    assert.deepEqual(
+        normalizeNestedScrollSample({...input, direction: 'up'}),
+        sample(1, 0, -1)
+    );
+    assert.deepEqual(
+        normalizeNestedScrollSample({...input, direction: 'down'}),
+        sample(1, 0, 1)
+    );
+    assert.equal(
+        normalizeNestedScrollSample({...input, direction: 'left'}),
+        null
+    );
+    assert.equal(
+        normalizeNestedScrollSample({...input, direction: 'right'}),
+        null
+    );
+}
+
+{
     const {controller, events, scheduler} = createHarness();
 
-    assert.equal(controller.handle(sample(1, 0, -2, false)), false);
     assert.equal(controller.handle(sample(2, 3, 1)), false);
     assert.deepEqual(events, []);
 

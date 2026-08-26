@@ -4,7 +4,12 @@ export type NestedScrollSample = {
     y: number;
     dx: number;
     dy: number;
-    smooth: boolean;
+};
+
+export type NestedScrollDirection = 'smooth' | 'up' | 'down' | 'left' | 'right';
+
+export type NestedScrollInput = NestedScrollSample & {
+    direction: NestedScrollDirection;
 };
 
 export type NestedScrollScheduler = {
@@ -22,6 +27,24 @@ export type NestedScrollGestureOptions = {
     end(time: number, distance: number): void;
 };
 
+export function normalizeNestedScrollSample(
+    input: NestedScrollInput
+): NestedScrollSample | null {
+    const {time, x, y, dx, dy, direction} = input;
+
+    switch (direction) {
+        case 'smooth':
+            return {time, x, y, dx, dy};
+        case 'up':
+            return {time, x, y, dx: 0, dy: -1};
+        case 'down':
+            return {time, x, y, dx: 0, dy: 1};
+        case 'left':
+        case 'right':
+            return null;
+    }
+}
+
 export class NestedScrollGestureController {
     private readonly _options: NestedScrollGestureOptions;
     private _active = false;
@@ -34,7 +57,7 @@ export class NestedScrollGestureController {
     }
 
     handle(sample: NestedScrollSample): boolean {
-        if (this._destroyed || !sample.smooth) return false;
+        if (this._destroyed) return false;
 
         if (!this._active) {
             if (sample.dx === 0 && sample.dy === 0) return false;

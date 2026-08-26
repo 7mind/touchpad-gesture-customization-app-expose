@@ -30,6 +30,7 @@ runCommand "nested-gnome-${shellMajorVersion}-check" { } ''
   ${gnugrep}/bin/grep -q 'GSETTINGS_BACKEND=keyfile' "$session_launcher"
   ${gnugrep}/bin/grep -q 'TOUCHPAD_GESTURE_NESTED_SCROLL_TEST=1' "$session_launcher"
   ${gnugrep}/bin/grep -q "overview-navigation-states 'APPLICATION_OVERVIEW_ON_DOWN'" "$session_launcher"
+  ${gnugrep}/bin/grep -q "interface: 'wl_output'" "$session_launcher"
   ${
     if presentationOption == "--devkit" then
       ''
@@ -49,6 +50,7 @@ runCommand "nested-gnome-${shellMajorVersion}-check" { } ''
   }
   test -f ${extension}/share/gnome-shell/extensions/${extensionUuid}/metadata.json
   test -f ${extension}/share/gnome-shell/extensions/${extensionUuid}/schemas/gschemas.compiled
+  ${gnugrep}/bin/grep -q 'captured-event::scroll' ${extension}/share/gnome-shell/extensions/${extensionUuid}/src/nestedScrollGesture.js
   ${gnugrep}/bin/grep -q 'group-overview-by-application' ${extension}/share/gnome-shell/extensions/${extensionUuid}/schemas/org.gnome.shell.extensions.touchpad-gesture-customization.gschema.xml
   mkdir -p "$out"
   touch "$out/passed"

@@ -45,6 +45,16 @@ export function createApplicationGroupedOverviewExtension(): ISubExtension {
             const appId = app.get_id() as string | null;
             return appId === null || appId.length === 0 ? null : appId;
         },
+        resolveFallbackSource(window) {
+            const frame = window.get_frame_rect();
+
+            return {
+                x: frame.x,
+                y: frame.y,
+                width: frame.width,
+                height: frame.height,
+            };
+        },
         invalidateLayouts() {
             for (const workspace of getOverviewWorkspaces())
                 invalidateWorkspaceLayout(workspace, {unfreeze: true});

@@ -37,6 +37,8 @@ export type GroupedOverviewLayout<T> = {
     slots: GroupedWindowSlot<T>[];
 };
 
+export class LayoutAreaTooSmallError extends RangeError {}
+
 type IndexedWindow<T> = GroupedOverviewWindow<T> & {
     sequence: number;
 };
@@ -308,7 +310,7 @@ function computeSpatialCells<T>(
     }
 
     if (bestCandidate === null)
-        throw new RangeError(
+        throw new LayoutAreaTooSmallError(
             'Layout area is too small for the configured gaps'
         );
 
