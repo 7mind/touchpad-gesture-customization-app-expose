@@ -15,6 +15,7 @@ npm test
 - [x] Same-application windows are grouped even when spatially separated; unmatched windows receive separate fallback groups.
 - [x] Window slots stay inside their application region and the overall area, preserve aspect ratio, and flatten in group-contiguous order.
 - [x] The owned patch installs and restores cleanly, preserves a later foreign patch, fails closed when unsupported, and falls back to stock slots after invalid input.
+- [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 
 The Node suite covers the pure layout and lifecycle controller. It cannot load GNOME Shell's `gi://` and `resource:///` production modules or drive a live compositor, so the checks below are the production-adapter leg.
 
@@ -26,7 +27,8 @@ The Node suite covers the pure layout and lifecycle controller. It cannot load G
 - [ ] Enable the option while Overview is visible; existing workspaces relayout without stale or duplicate previews.
 - [ ] Disable the option while Overview is visible; stock geometry returns immediately.
 - [ ] Reload and disable the extension while Overview is visible; no Shell error is logged and stock behavior is restored.
-- [ ] On GNOME 48 and 49, leave the option disabled and verify all pre-existing gestures still work.
+- [ ] On GNOME 48 and 49, set the option to `true` with `gsettings`, then open preferences; the switch is insensitive and shown off while the stored value remains unchanged.
+- [ ] On GNOME 48 and 49 with the stored value set to either `false` or `true`, verify Overview remains stock and all pre-existing gestures still work.
 
 ### Normal Overview entry paths
 

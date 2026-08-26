@@ -11,6 +11,7 @@ import {
     GioSettings,
     IntegerSettingsKeys,
 } from '../common/settings.js';
+import {resolveApplicationGroupedOverviewAvailability} from '../common/groupedOverviewAvailability.js';
 import {getAppKeybindingGesturePrefsPage} from './appGestures.js';
 
 export type GtkBuilder = Omit<Gtk.Builder, 'get_object'> & {
@@ -52,6 +53,25 @@ function bind_boolean_value(
         'active',
         flags ?? Gio.SettingsBindFlags.DEFAULT
     );
+}
+
+function bind_application_grouped_overview_value(
+    settings: GioSettings,
+    builder: GtkBuilder,
+    shellVersion: string
+) {
+    const key = 'group-overview-windows-by-application';
+    const button = builder.get_object<Gtk.Switch>(key);
+    const availability = resolveApplicationGroupedOverviewAvailability(
+        shellVersion,
+        settings.get_boolean(key)
+    );
+
+    button.set_sensitive(availability.supported);
+
+    if (availability.supported)
+        settings.bind(key, button, 'active', Gio.SettingsBindFlags.DEFAULT);
+    else button.set_active(availability.enabled);
 }
 
 /**
@@ -108,7 +128,11 @@ function display_in_log_scale(
  * @param builder builder object for preference widgets
  * @param settings setting object of extension
  */
-function bindPrefsSettings(builder: GtkBuilder, settings: Gio.Settings) {
+function bindPrefsSettings(
+    builder: GtkBuilder,
+    settings: Gio.Settings,
+    shellVersion: string
+) {
     display_in_log_scale(
         'touchpad-speed-scale',
         'touchpad-speed-scale_display-value',
@@ -151,11 +175,7 @@ function bindPrefsSettings(builder: GtkBuilder, settings: Gio.Settings) {
         builder
     );
     bind_boolean_value('enable-vertical-app-gesture', settings, builder);
-    bind_boolean_value(
-        'group-overview-windows-by-application',
-        settings,
-        builder
-    );
+    bind_application_grouped_overview_value(settings, builder, shellVersion);
 
     bind_boolean_value('allow-minimize-window', settings, builder);
     bind_boolean_value('allow-fullscreen-window', settings, builder);
@@ -201,7 +221,8 @@ function loadCssProvider(styleManager: Adw.StyleManager, uiDir: string) {
 export function buildPrefsWidget(
     prefsWindow: Adw.PreferencesWindow,
     settings: Gio.Settings,
-    uiDir: string
+    uiDir: string,
+    shellVersion: string
 ) {
     prefsWindow.set_search_enabled(true);
 
@@ -216,7 +237,7 @@ export function buildPrefsWidget(
     builder.add_from_file(`${uiDir}/customizations.ui`);
 
     // bind to settings
-    bindPrefsSettings(builder, settings);
+    bindPrefsSettings(builder, settings, shellVersion);
 
     // pinch gesture page
     prefsWindow.add(builder.get_object<Adw.PreferencesPage>('gestures_page'));

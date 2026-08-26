@@ -1,11 +1,13 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import {
     AllSettingsKeys,
     PinchGestureType,
     SwipeGestureType,
 } from './common/settings.js';
+import {resolveApplicationGroupedOverviewAvailability} from './common/groupedOverviewAvailability.js';
 import * as Constants from './constants.js';
 import {OverviewRoundTripGestureExtension} from './src/overviewRoundTrip.js';
 import {WorkspaceSwitchingExtension} from './src/workspaceSwitching.js';
@@ -91,7 +93,15 @@ export default class TouchpadGestureCustomization extends Extension {
         const horizontalSwipeToFingersMap =
             this._getHorizontalSwipeGestureTypeAndFingers();
 
-        if (this.settings.get_boolean('group-overview-windows-by-application'))
+        const groupedOverviewAvailability =
+            resolveApplicationGroupedOverviewAvailability(
+                Config.PACKAGE_VERSION,
+                this.settings.get_boolean(
+                    'group-overview-windows-by-application'
+                )
+            );
+
+        if (groupedOverviewAvailability.enabled)
             this._extensions.push(createApplicationGroupedOverviewExtension());
 
         /**

@@ -19,7 +19,7 @@ swipe up    -> all applications grouped by application
 swipe down  -> current application's windows only
 ```
 
-The grouped layout is off by default and targets GNOME Shell 50. It checks the required private Shell interfaces at runtime; an unsupported Shell build keeps the stock Overview instead. GNOME 48–49 users can leave the setting disabled to retain the extension's existing behavior.
+The grouped layout is off by default and targets GNOME Shell 50 or later. It checks the required private Shell interfaces at runtime; an unsupported Shell build keeps the stock Overview instead. On GNOME 48–49, the preference switch is insensitive and shown off. The stored setting is ignored even if it was enabled previously or changed with `gsettings`, so the extension retains its existing behavior on those versions.
 
 ### App Exposé gesture setup
 
