@@ -2,9 +2,9 @@
 
 This repository ([7mind/touchpad-gesture-customization-app-expose](https://github.com/7mind/touchpad-gesture-customization-app-expose)) is a downstream fork of [HieuTNg/touchpad-gesture-customization](https://github.com/HieuTNg/touchpad-gesture-customization). It exists primarily to add a macOS-style **App Exposé** behavior to the overview gesture: when configured, swiping down with 3/4 fingers spreads only the windows of the currently focused application, while swiping up keeps the standard GNOME overview / app grid navigation. See the *Application overview on down* mode under *Overview navigation states* in the extension preferences. Changes from this fork may or may not be upstreamed.
 
-The fork also provides an optional **Mission Control-style grouped Overview**. When enabled, the normal window picker lays out applications as primary regions and lays out each application's windows inside its region. The same grouped geometry is used for touchpad swipe-up, `Super`, the hot corner, keyboard shortcuts, and programmatic Overview entry.
+The fork also provides an optional **Mission Control-style Grouping by Application in Overview**. When enabled, the normal window picker lays out applications as primary regions and lays out each application's windows inside its region. The same grouped geometry is used for touchpad swipe-up, `Super`, the hot corner, keyboard shortcuts, and programmatic Overview entry.
 
-### Mission Control-style grouped Overview
+### Application-grouped Overview ala Mission Control
 
 Open the extension preferences and enable **Group Overview windows by application**, or run:
 
