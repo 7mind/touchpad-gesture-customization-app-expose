@@ -829,7 +829,7 @@ Application grouping is **orthogonal** to that navigation state. Do not encode i
 Preferred setting:
 
 ```text
-group-overview-windows-by-application: boolean
+group-overview-by-application: boolean
 ```
 
 or, if future layout modes are likely:
@@ -1096,7 +1096,7 @@ This is the main reason to defer chrome. It must track the same workspace/contai
 A developer picking this up should aim for the smallest vertical slice that proves the architecture:
 
 1. Extract `getOverviewWorkspaces()` + `invalidateWorkspaceLayout()`.
-2. Add a boolean `group-overview-windows-by-application` setting (or temporarily hard-wire it for `APPLICATION_OVERVIEW_ON_DOWN`).
+2. Add a boolean `group-overview-by-application` setting (or temporarily hard-wire it for `APPLICATION_OVERVIEW_ON_DOWN`).
 3. Add `GroupedOverviewExtension` as a separate `ISubExtension` in `extension.ts`.
 4. Patch `WorkspaceLayout.prototype._createBestLayout` globally while enabled.
 5. Implement a simple two-level spatial grid/row layout in pure TypeScript:

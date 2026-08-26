@@ -97,7 +97,7 @@ export default class TouchpadGestureCustomization extends Extension {
             resolveApplicationGroupedOverviewAvailability(
                 Config.PACKAGE_VERSION,
                 this.settings.get_boolean(
-                    'group-overview-windows-by-application'
+                    'group-overview-by-application'
                 )
             );
 

@@ -86,7 +86,7 @@
       <default>false</default>
       <description>Enable vertical swipe for app gesture</description>
     </key>
-    <key name='group-overview-windows-by-application' type='b'>
+    <key name='group-overview-by-application' type='b'>
       <default>false</default>
       <description>Group normal Overview windows into application regions</description>
     </key>

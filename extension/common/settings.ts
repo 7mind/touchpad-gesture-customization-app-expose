@@ -49,7 +49,7 @@ export type BooleanSettingsKeys =
     | 'enable-forward-back-gesture'
     | 'default-overview-gesture-direction'
     | 'enable-vertical-app-gesture'
-    | 'group-overview-windows-by-application';
+    | 'group-overview-by-application';
 
 export type IntegerSettingsKeys = 'alttab-delay' | 'hold-swipe-delay-duration';
 

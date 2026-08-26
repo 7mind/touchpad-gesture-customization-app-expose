@@ -60,7 +60,7 @@ function bind_application_grouped_overview_value(
     builder: GtkBuilder,
     shellVersion: string
 ) {
-    const key = 'group-overview-windows-by-application';
+    const key = 'group-overview-by-application';
     const button = builder.get_object<Gtk.Switch>(key);
     const availability = resolveApplicationGroupedOverviewAvailability(
         shellVersion,
