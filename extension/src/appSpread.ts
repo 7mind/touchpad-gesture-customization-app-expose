@@ -1,4 +1,3 @@
-import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -6,34 +5,10 @@ import {SearchController} from 'resource:///org/gnome/shell/ui/searchController.
 import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 import {shouldShowInApplicationOverview} from './appOverviewWindowFilter.js';
-
-// A live Workspace actor as shown in the overview, one per (workspace ×
-// monitor). On secondary monitors with workspaces-only-on-primary its
-// metaWorkspace is null.
-type OverviewWorkspace = {
-    _layoutFrozenId: number;
-    _container: {layout_manager: {layout_frozen: boolean}};
-    _skipTaskbarSignals: Map<Meta.Window, number>;
-    containsMetaWindow(window: Meta.Window): boolean;
-    _isMyWindow(window: Meta.Window): boolean;
-    _doAddWindow(window: Meta.Window): void;
-    _addWindowClone(window: Meta.Window): void;
-    _doRemoveWindow(window: Meta.Window): void;
-};
-
-// Holds Workspace actors: WorkspacesView (primary, _workspaces array) or
-// ExtraWorkspaceView (secondary, single _workspace).
-type WorkspaceContainer = {
-    _workspaces?: OverviewWorkspace[];
-    _workspace?: OverviewWorkspace;
-};
-
-// An entry of WorkspacesDisplay._workspacesViews: either a WorkspacesView
-// (primary, a WorkspaceContainer itself) or a SecondaryMonitorDisplay, which
-// wraps its container one level deeper in _workspacesView.
-type MonitorView = WorkspaceContainer & {
-    _workspacesView?: WorkspaceContainer;
-};
+import {
+    getOverviewWorkspaces,
+    unfreezeOverviewWorkspaceLayouts,
+} from './overviewInternals.js';
 
 export class ApplicationWindowOverview {
     private _app: Shell.App | null = null;
@@ -75,7 +50,7 @@ export class ApplicationWindowOverview {
         this._disableSearch();
         this._addApplicationWorkspaceWindows();
         this._removeFilteredWorkspaceWindows();
-        this._unfreezeWorkspaceLayouts();
+        unfreezeOverviewWorkspaceLayouts();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -212,7 +187,7 @@ export class ApplicationWindowOverview {
     }
 
     private _addApplicationWorkspaceWindows(): void {
-        for (const workspace of this._getOverviewWorkspaces()) {
+        for (const workspace of getOverviewWorkspaces()) {
             for (const window of this._windows) {
                 const shouldAdd =
                     !workspace.containsMetaWindow(window) &&
@@ -239,7 +214,7 @@ export class ApplicationWindowOverview {
         if (workspaceIsOverviewWindow === undefined)
             throw new Error('Missing workspace overview window filter');
 
-        for (const workspace of this._getOverviewWorkspaces()) {
+        for (const workspace of getOverviewWorkspaces()) {
             for (const window of this._windows) {
                 if (
                     workspace.containsMetaWindow(window) &&
@@ -251,31 +226,6 @@ export class ApplicationWindowOverview {
                     workspace._doRemoveWindow(window);
             }
         }
-    }
-
-    // Every live Workspace actor currently shown in the overview, across all
-    // monitors. A primary monitor's view is a WorkspacesView (with a
-    // _workspaces array); a secondary monitor's view is a
-    // SecondaryMonitorDisplay that nests its WorkspaceContainer one level
-    // deeper in _workspacesView (an ExtraWorkspaceView with a single
-    // _workspace, or a WorkspacesView). Descending into both is required to
-    // reach secondary-monitor Workspaces.
-    private _getOverviewWorkspaces(): OverviewWorkspace[] {
-        const display = Main.overview._overview._controls
-            ._workspacesDisplay as unknown as {
-            _workspacesViews?: MonitorView[];
-        };
-
-        const result: OverviewWorkspace[] = [];
-
-        for (const view of display._workspacesViews ?? []) {
-            const container: WorkspaceContainer = view._workspacesView ?? view;
-
-            if (container._workspaces) result.push(...container._workspaces);
-            else if (container._workspace) result.push(container._workspace);
-        }
-
-        return result;
     }
 
     // When the filter is installed mid-gesture, Workspaces have already been
@@ -314,7 +264,7 @@ export class ApplicationWindowOverview {
             .map(actor => actor.metaWindow)
             .filter((window): window is Meta.Window => window !== null);
 
-        for (const workspace of this._getOverviewWorkspaces()) {
+        for (const workspace of getOverviewWorkspaces()) {
             for (const window of windows) {
                 if (
                     !this._hasWindow(window) &&
@@ -322,24 +272,6 @@ export class ApplicationWindowOverview {
                 )
                     workspace._doRemoveWindow(window);
             }
-        }
-    }
-
-    // _doRemoveWindow freezes the WorkspaceLayout for 750ms (or until pointer
-    // moves outside the workspace), so the remaining clones don't reflow
-    // mid-gesture. Under a touchpad swipe the pointer doesn't move, so the
-    // layout stays frozen and windows snap to their final positions only when
-    // the timer fires — typically after the gesture has ended. Force the
-    // unfreeze immediately so the app windows tween to their new positions
-    // alongside the overview transition.
-    private _unfreezeWorkspaceLayouts(): void {
-        for (const ws of this._getOverviewWorkspaces()) {
-            if (ws._layoutFrozenId > 0) {
-                GLib.source_remove(ws._layoutFrozenId);
-                ws._layoutFrozenId = 0;
-            }
-
-            ws._container.layout_manager.layout_frozen = false;
         }
     }
 

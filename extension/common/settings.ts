@@ -48,7 +48,8 @@ export type BooleanSettingsKeys =
     | 'invert-brightness-gesture-direction'
     | 'enable-forward-back-gesture'
     | 'default-overview-gesture-direction'
-    | 'enable-vertical-app-gesture';
+    | 'enable-vertical-app-gesture'
+    | 'group-overview-by-application';
 
 export type IntegerSettingsKeys = 'alttab-delay' | 'hold-swipe-delay-duration';
 

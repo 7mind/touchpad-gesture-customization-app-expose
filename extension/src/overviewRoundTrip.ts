@@ -7,6 +7,7 @@ import {createSwipeTracker} from './swipeTracker.js';
 import {OverviewNavigationState} from '../common/settings.js';
 import {ExtSettings, OverviewControlsState} from '../constants.js';
 import {ApplicationWindowOverview} from './appSpread.js';
+import {NestedScrollGesture} from './nestedScrollGesture.js';
 
 enum ExtensionState {
     // DISABLED = 0,
@@ -36,14 +37,21 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     private _appOverview: ApplicationWindowOverview;
     private _windowTracker: Shell.WindowTracker;
     private _gestureBeganInAppOverview = false;
+    private readonly _nestedScrollTestEnabled: boolean;
+    private _nestedScrollGesture?: NestedScrollGesture;
 
     // Whether the gesture started with the app-overview filter already
     // installed (i.e. the user is starting a new swipe from inside the
     // application overview). When true, the gesture is locked to the
     // [HIDDEN, WINDOW_PICKER] range and the hysteresis-based mid-gesture
     // filter toggling is suppressed.
-    constructor(navigationStates: OverviewNavigationState) {
+    constructor(
+        navigationStates: OverviewNavigationState,
+        nestedScrollTestEnabled: boolean
+    ) {
         this._navigationStates = navigationStates;
+        this._nestedScrollTestEnabled =
+            nestedScrollTestEnabled && this._isAppOverviewOnDown();
         this._stateAdjustment =
             Main.overview._overview._controls._stateAdjustment;
         this._oldGetStateTransitionParams =
@@ -96,6 +104,8 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     }
 
     setVerticalSwipeTracker(nfingers: number[]) {
+        this._nestedScrollGesture?.destroy();
+        this._nestedScrollGesture = undefined;
         this._verticalConnectors?.forEach(connector =>
             this._verticalSwipeTracker?.disconnect(connector)
         );
@@ -108,6 +118,12 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             Clutter.Orientation.VERTICAL,
             ExtSettings.DEFAULT_OVERVIEW_GESTURE_DIRECTION
         );
+
+        if (this._nestedScrollTestEnabled)
+            this._nestedScrollGesture = new NestedScrollGesture(
+                global.stage,
+                this._verticalSwipeTracker
+            );
 
         this._verticalConnectors = [
             this._verticalSwipeTracker.connect(
@@ -177,6 +193,8 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     }
 
     destroy(): void {
+        this._nestedScrollGesture?.destroy();
+        this._nestedScrollGesture = undefined;
         this._verticalConnectors?.forEach(connector =>
             this._verticalSwipeTracker?.disconnect(connector)
         );

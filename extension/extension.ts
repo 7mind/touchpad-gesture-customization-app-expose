@@ -1,11 +1,13 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import {
     AllSettingsKeys,
     PinchGestureType,
     SwipeGestureType,
 } from './common/settings.js';
+import {resolveApplicationGroupedOverviewAvailability} from './common/groupedOverviewAvailability.js';
 import * as Constants from './constants.js';
 import {OverviewRoundTripGestureExtension} from './src/overviewRoundTrip.js';
 import {WorkspaceSwitchingExtension} from './src/workspaceSwitching.js';
@@ -21,6 +23,7 @@ import {CloseWindowExtension} from './src/pinchGestures/closeWindow.js';
 import {ShowNotificationListExtension} from './src/pinchGestures/showNotificationList.js';
 import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
+import {createApplicationGroupedOverviewExtension} from './src/groupedOverviewIntegration.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -90,6 +93,15 @@ export default class TouchpadGestureCustomization extends Extension {
         const horizontalSwipeToFingersMap =
             this._getHorizontalSwipeGestureTypeAndFingers();
 
+        const groupedOverviewAvailability =
+            resolveApplicationGroupedOverviewAvailability(
+                Config.PACKAGE_VERSION,
+                this.settings.get_boolean('group-overview-by-application')
+            );
+
+        if (groupedOverviewAvailability.enabled)
+            this._extensions.push(createApplicationGroupedOverviewExtension());
+
         /**
          * Overview navigation
          */
@@ -105,7 +117,8 @@ export default class TouchpadGestureCustomization extends Extension {
 
         const overviewRoundTripGestureExtension =
             new OverviewRoundTripGestureExtension(
-                this.settings.get_enum('overview-navigation-states')
+                this.settings.get_enum('overview-navigation-states'),
+                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1'
             );
 
         // By default, disable overview navigation when user doesn't assign any gestures

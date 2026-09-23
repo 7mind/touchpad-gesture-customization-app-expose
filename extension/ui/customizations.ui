@@ -8,7 +8,7 @@
             <item translatable="yes">Cyclic</item>
             <item translatable="yes">GNOME</item>
             <item translatable="yes">Overview only</item>
-            <item translatable="yes">Application overview on down</item>
+            <item translatable="yes">App overview on down</item>
         </items>
     </object>
 
@@ -277,6 +277,19 @@
                     <object class="AdwComboRow" id="overview-navigation-states">
                         <property name="title" translatable="yes">Overview navigation states</property>
                         <property name="model">overview_navigation_states_model</property>
+                    </object>
+                </child>
+
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Group Overview by application</property>
+                        <property name="subtitle" translatable="yes">Mission Control-style layout on compatible GNOME Shell versions</property>
+                        <child>
+                            <object class="GtkSwitch" id="group-overview-by-application">
+                                <property name="valign">center</property>
+                                <property name="active">False</property>
+                            </object>
+                        </child>
                     </object>
                 </child>
 

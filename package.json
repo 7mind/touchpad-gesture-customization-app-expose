@@ -25,7 +25,7 @@
         "format:extension": "npx prettier extension --write",
         "transpile": "npm run lint:extension && npm run format:extension && tsc",
         "build": "npm run clean && npm run transpile && npm run lint:package && npm run format:build",
-        "test": "tsc --pretty false && node tests/appOverviewWindowFilter.test.js",
+        "test": "tsc --pretty false && node tests/appOverviewWindowFilter.test.js && node tests/nestedScrollGesture.test.js && node tests/groupedOverviewAvailability.test.js && node tests/groupedOverviewLayout.test.js && node tests/groupedOverview.test.js",
         "pack": "npm run build && make pack",
         "update": "npm run pack && make update"
     },
