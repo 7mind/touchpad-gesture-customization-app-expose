@@ -113,9 +113,17 @@ Run the extension in a nested GNOME 48, 49, or 50 Wayland session without
 logging out of the host session:
 
 ```sh
-nix run .#gnome-48
-nix run .#gnome-49
-nix run .#gnome-50
+nix run '.?dir=nix/testing#gnome-48'
+nix run '.?dir=nix/testing#gnome-49'
+nix run '.?dir=nix/testing#gnome-50'
+```
+
+The test apps live in a separate flake so downstream package consumers do not
+resolve the three test-only Nixpkgs inputs. Run the commands above from the
+repository root. Check all three launchers with:
+
+```sh
+nix flake check '.?dir=nix/testing'
 ```
 
 Each command uses its pinned Nixpkgs release and installs this checkout into a

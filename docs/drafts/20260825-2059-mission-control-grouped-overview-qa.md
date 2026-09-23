@@ -8,7 +8,7 @@ Run:
 
 ```sh
 npm test
-nix flake check
+nix flake check '.?dir=nix/testing'
 ```
 
 - [x] One application receives the full outer region; one-window and many-window cases produce valid slots.
@@ -29,9 +29,9 @@ The Node suite covers the pure layout, lifecycle, and nested scroll controllers.
 Run one launcher at a time from a terminal inside the graphical login session:
 
 ```sh
-nix run .#gnome-48
-nix run .#gnome-49
-nix run .#gnome-50
+nix run '.?dir=nix/testing#gnome-48'
+nix run '.?dir=nix/testing#gnome-49'
+nix run '.?dir=nix/testing#gnome-50'
 ```
 
 The first run may download a multi-gigabyte GNOME closure. Each launcher uses a temporary HOME/XDG profile, private D-Bus and keyfile-backed GSettings state, and a version-specific GNOME closure. GNOME 49–50 also use a private PipeWire/WirePlumber media graph. The nested compositor connects to the host display, while test applications receive only the nested Wayland display. The host system bus is used when available, but the host Shell does not restart. Close the nested window or press `Ctrl-C` to stop the run.
