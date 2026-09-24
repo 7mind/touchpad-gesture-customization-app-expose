@@ -24,6 +24,7 @@ import {ShowNotificationListExtension} from './src/pinchGestures/showNotificatio
 import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
 import {createApplicationGroupedOverviewExtension} from './src/groupedOverviewIntegration.js';
+import {ApplicationWindowOverview} from './src/appSpread.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -99,8 +100,12 @@ export default class TouchpadGestureCustomization extends Extension {
                 this.settings.get_boolean('group-overview-by-application')
             );
 
+        const applicationOverview = new ApplicationWindowOverview();
+
         if (groupedOverviewAvailability.enabled)
-            this._extensions.push(createApplicationGroupedOverviewExtension());
+            this._extensions.push(
+                createApplicationGroupedOverviewExtension(applicationOverview)
+            );
 
         /**
          * Overview navigation
@@ -118,7 +123,8 @@ export default class TouchpadGestureCustomization extends Extension {
         const overviewRoundTripGestureExtension =
             new OverviewRoundTripGestureExtension(
                 this.settings.get_enum('overview-navigation-states'),
-                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1'
+                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1',
+                applicationOverview
             );
 
         // By default, disable overview navigation when user doesn't assign any gestures

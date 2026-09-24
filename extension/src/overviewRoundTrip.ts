@@ -47,7 +47,8 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
     // filter toggling is suppressed.
     constructor(
         navigationStates: OverviewNavigationState,
-        nestedScrollTestEnabled: boolean
+        nestedScrollTestEnabled: boolean,
+        applicationOverview: ApplicationWindowOverview
     ) {
         this._navigationStates = navigationStates;
         this._nestedScrollTestEnabled =
@@ -56,7 +57,7 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
             Main.overview._overview._controls._stateAdjustment;
         this._oldGetStateTransitionParams =
             this._stateAdjustment.getStateTransitionParams;
-        this._appOverview = new ApplicationWindowOverview();
+        this._appOverview = applicationOverview;
         this._windowTracker = Shell.WindowTracker.get_default();
         this._progress = 0;
     }

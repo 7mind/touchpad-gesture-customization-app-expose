@@ -32,6 +32,72 @@ function groupByKey(result, key) {
     return group;
 }
 
+function exposedArea(window, foreground) {
+    const right = window.x + window.width;
+    const bottom = window.y + window.height;
+    const cuts = [
+        ...new Set([
+            window.x,
+            right,
+            ...foreground.flatMap(slot => [
+                Math.max(window.x, Math.min(right, slot.x)),
+                Math.max(window.x, Math.min(right, slot.x + slot.width)),
+            ]),
+        ]),
+    ].sort((a, b) => a - b);
+    let area = 0;
+
+    for (let index = 1; index < cuts.length; index++) {
+        const left = cuts[index - 1];
+        const x = (left + cuts[index]) / 2;
+        const intervals = foreground
+            .filter(slot => slot.x < x && slot.x + slot.width > x)
+            .map(slot => [
+                Math.max(window.y, slot.y),
+                Math.min(bottom, slot.y + slot.height),
+            ])
+            .filter(([start, end]) => end > start)
+            .sort(([a], [b]) => a - b);
+        let end = window.y;
+        let covered = 0;
+
+        for (const [start, nextEnd] of intervals) {
+            covered += Math.max(0, nextEnd - Math.max(start, end));
+            end = Math.max(end, nextEnd);
+        }
+
+        area += (cuts[index] - left) * (window.height - covered);
+    }
+
+    return area;
+}
+
+for (const sizes of [
+    [
+        [300, 200],
+        [1200, 900],
+    ],
+    Array.from({length: 12}, () => [800, 600]),
+    Array.from({length: 40}, (_, index) =>
+        index % 2 === 0 ? [1200, 400] : [300, 900]
+    ),
+]) {
+    const windows = sizes.map(([width, height], index) =>
+        preview(`visible-${index}`, 'stack', 0, 0, width, height)
+    );
+    const result = layoutWindowsByApplication(windows, AREA, OPTIONS);
+
+    for (let index = 0; index < result.slots.length; index++) {
+        const slot = result.slots[index];
+        const visible = exposedArea(slot, result.slots.slice(index + 1));
+
+        assert.ok(
+            visible >= slot.width * slot.height * 0.1 - 1e-6,
+            `stack window ${index} must retain at least 10% exposed area`
+        );
+    }
+}
+
 {
     const result = layoutWindowsByApplication(
         [preview('only', 'editor', 100, 100, 1000, 700)],
@@ -189,6 +255,115 @@ function groupByKey(result, key) {
         completedGroups.add(currentGroup);
         assert.equal(completedGroups.has(slot.groupKey), false);
         currentGroup = slot.groupKey;
+    }
+}
+
+{
+    const windows = Array.from({length: 9}, (_, index) =>
+        preview(`stack-${index}`, 'stack', index * 80, 0, 800, 600)
+    );
+    const result = layoutWindowsByApplication(windows, AREA, OPTIONS);
+    const center = slot => ({
+        x: slot.x + slot.width / 2,
+        y: slot.y + slot.height / 2,
+    });
+    const origin = center(result.slots[0]);
+    let previousRadius = 0;
+
+    assert.deepEqual(
+        result.slots.map(slot => slot.item),
+        windows.map(window => window.item)
+    );
+
+    for (let index = 1; index < result.slots.length; index++) {
+        const previous = result.slots[index - 1];
+        const slot = result.slots[index];
+        const point = center(slot);
+        const radius = Math.hypot(point.x - origin.x, point.y - origin.y);
+
+        assert.ok(
+            slot.x < previous.x + previous.width &&
+                previous.x < slot.x + slot.width &&
+                slot.y < previous.y + previous.height &&
+                previous.y < slot.y + slot.height,
+            'successive windows must overlap in the application stack'
+        );
+        assert.ok(radius > previousRadius, 'the spiral must expand outward');
+
+        if (index > 1) {
+            const before = center(previous);
+            const cross =
+                (before.x - origin.x) * (point.y - origin.y) -
+                (before.y - origin.y) * (point.x - origin.x);
+            assert.ok(
+                cross > 0,
+                'the spiral must turn clockwise in screen coordinates'
+            );
+        }
+
+        assert.ok(contains(AREA, slot));
+        previousRadius = radius;
+    }
+}
+
+{
+    const windows = Array.from({length: 6}, (_, index) =>
+        preview(`expose-${index}`, 'editor', index * 80, 0, 800, 600)
+    );
+    const result = layoutWindowsByApplication(windows, AREA, {
+        ...OPTIONS,
+        windowLayout: 'spread',
+    });
+
+    assert.deepEqual(result.groups[0].region, AREA);
+
+    for (const slot of result.slots) {
+        for (const other of result.slots) {
+            if (slot === other) continue;
+
+            assert.ok(
+                slot.x >= other.x + other.width ||
+                    other.x >= slot.x + slot.width ||
+                    slot.y >= other.y + other.height ||
+                    other.y >= slot.y + slot.height,
+                'App Exposé must keep every window fully exposed'
+            );
+        }
+    }
+}
+
+for (const count of [1, 2, 3, 12, 40]) {
+    for (const area of [AREA, {x: -900, y: 120, width: 700, height: 1200}]) {
+        const windows = Array.from({length: count}, (_, index) =>
+            preview(
+                `mixed-${index}`,
+                'mixed',
+                index * 30,
+                index * 20,
+                index % 2 === 0 ? 1200 : 300,
+                index % 2 === 0 ? 400 : 900
+            )
+        );
+        const result = layoutWindowsByApplication(windows, area, OPTIONS);
+
+        assert.equal(result.slots.length, count);
+
+        for (const slot of result.slots) {
+            const source = windows.find(
+                window => window.item === slot.item
+            ).source;
+
+            assert.ok(contains(area, slot));
+            assert.ok(slot.width > 0 && slot.height > 0);
+            assert.ok(
+                slot.width <= source.width * OPTIONS.maxWindowScale + 1e-10
+            );
+            assert.ok(
+                Math.abs(
+                    slot.width / slot.height - source.width / source.height
+                ) < 1e-10
+            );
+        }
     }
 }
 

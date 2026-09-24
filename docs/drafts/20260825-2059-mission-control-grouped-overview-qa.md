@@ -15,6 +15,8 @@ nix flake check '.?dir=nix/testing'
 - [x] Multiple applications receive distinct coherent regions with sublinear window-count weighting and deterministic spatial placement.
 - [x] Same-application windows are grouped even when spatially separated; unmatched windows receive separate fallback groups.
 - [x] Window slots stay inside their application region and the overall area, preserve aspect ratio, and flatten in group-contiguous order.
+- [x] Normal Overview windows overlap in a deterministic outward clockwise spiral; mixed window sizes and large stacks stay bounded without distorting aspect ratios, and every preview retains at least 10% exposed area against the union of foreground windows.
+- [x] Explicit App Exposé layout spreads windows without overlap and uses the full application region.
 - [x] The owned patch installs and restores cleanly, preserves a later foreign patch, fails closed when unsupported, and falls back to stock slots after invalid input.
 - [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 - [x] The pinned GNOME 48, 49, and 50 closures expose the required compositor mode, package the extension and compiled schema, and build ShellCheck-clean isolated launchers.
@@ -70,6 +72,8 @@ Each isolated profile selects _App overview on down_. Focus one of the two termi
 - [ ] While Overview is visible, open, close, resize, minimize, and unminimize windows; affected groups recompute.
 - [ ] Move a window between workspaces and drag a preview between workspace thumbnails.
 - [ ] Traverse with the keyboard; focus remains usable and visits each application's windows contiguously.
+- [ ] The spiral paint order follows its window sequence; hover and keyboard focus raise the selected preview, and leaving it restores the stack.
+- [ ] Closing, dragging, and compositor restacking do not scramble the spiral's paint order.
 - [ ] Select a window, use its close button, and drag it; standard `WindowPreview` interactions remain functional.
 - [ ] Confirm app-grid transitions, search entry, per-window icons, titles, and overlays remain functional.
 

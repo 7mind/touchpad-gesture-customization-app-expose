@@ -6,6 +6,7 @@ export type LayoutRectangle = {
 };
 
 export type GroupedOverviewLayoutOptions = {
+    windowLayout: 'spiral' | 'spread';
     groupGap: number;
     groupPadding: number;
     windowGap: number;
@@ -51,6 +52,15 @@ type MutableApplicationGroup<T> = {
 
 type PreparedApplicationGroup<T> = MutableApplicationGroup<T> & {
     weight: number;
+    spiralSlots: IntrinsicWindowSlot<T>[];
+};
+
+type IntrinsicWindowSlot<T> = LayoutRectangle & {item: T};
+
+type ExposedWindow = {
+    area: number;
+    exposedArea: number;
+    fragments: LayoutRectangle[];
 };
 
 type SpatialItem<T> = {
@@ -82,6 +92,12 @@ const MINIMUM_GROUP_ASPECT = 0.6;
 const MAXIMUM_GROUP_ASPECT = 2.4;
 const MINIMUM_LAYOUT_SIZE = 1;
 const SCORE_TOLERANCE = 1e-12;
+const SPIRAL_ANGLE_STEP = Math.PI / 3;
+const SPIRAL_INITIAL_ANGLE = -Math.PI / 2;
+const SPIRAL_RADIUS_FRACTION = 0.22;
+const MINIMUM_EXPOSED_FRACTION = 0.1;
+const EXPOSURE_RESERVE_FRACTION = 0.1;
+const SCALE_SEARCH_STEPS = 24;
 
 export function createGroupedOverviewLayoutOptions(
     windowGap: number
@@ -89,6 +105,7 @@ export function createGroupedOverviewLayoutOptions(
     assertNonNegativeFinite(windowGap, 'windowGap');
 
     return {
+        windowLayout: 'spiral',
         groupGap: windowGap * GROUP_GAP_MULTIPLIER,
         groupPadding: windowGap * GROUP_PADDING_MULTIPLIER,
         windowGap,
@@ -115,7 +132,7 @@ export class GroupedOverviewLayoutEngine<T> {
         options: GroupedOverviewLayoutOptions
     ) {
         validateOptions(options);
-        this._groups = groupWindows(windows, options.groupCountFactor);
+        this._groups = groupWindows(windows, options);
         this._options = {...options};
     }
 
@@ -141,29 +158,24 @@ export class GroupedOverviewLayoutEngine<T> {
                 outerCell.rectangle,
                 this._options.groupPadding
             );
-            const innerItems = group.windows.map(window =>
-                createWindowSpatialItem(window)
-            );
-            const innerCells = computeSpatialCells(
-                innerItems,
-                innerArea,
-                this._options.windowGap,
-                this._options.spatialWeight
-            );
+            const innerSlots =
+                this._options.windowLayout === 'spiral'
+                    ? computeSpiralSlots(
+                          group.spiralSlots,
+                          innerArea,
+                          this._options.maxWindowScale
+                      )
+                    : computeSpreadSlots(
+                          group.windows,
+                          innerArea,
+                          this._options
+                      );
             const items: T[] = [];
 
-            for (const innerCell of innerCells) {
-                const window = innerCell.item.item;
-                const slot = fitRectangle(
-                    window.source,
-                    innerCell.rectangle,
-                    this._options.maxWindowScale
-                );
-
-                items.push(window.item);
+            for (const slot of innerSlots) {
+                items.push(slot.item);
                 result.slots.push({
                     ...slot,
-                    item: window.item,
                     groupKey: group.key,
                 });
             }
@@ -180,9 +192,188 @@ export class GroupedOverviewLayoutEngine<T> {
     }
 }
 
+function computeSpiralSlots<T>(
+    rectangles: readonly IntrinsicWindowSlot<T>[],
+    area: LayoutRectangle,
+    maximumScale: number
+): IntrinsicWindowSlot<T>[] {
+    const bounds = unionRectangles(rectangles);
+    const target = fitRectangle(bounds, area, maximumScale);
+    const scale = target.width / bounds.width;
+
+    return rectangles.map(rectangle => ({
+        item: rectangle.item,
+        x: target.x + (rectangle.x - bounds.x) * scale,
+        y: target.y + (rectangle.y - bounds.y) * scale,
+        width: rectangle.width * scale,
+        height: rectangle.height * scale,
+    }));
+}
+
+function prepareSpiralSlots<T>(
+    windows: readonly IndexedWindow<T>[]
+): IntrinsicWindowSlot<T>[] {
+    const minimumWidth = Math.min(
+        ...windows.map(window => window.source.width)
+    );
+    const minimumHeight = Math.min(
+        ...windows.map(window => window.source.height)
+    );
+    const radiusStep =
+        (Math.min(minimumWidth, minimumHeight) * SPIRAL_RADIUS_FRACTION) /
+        Math.sqrt(Math.max(1, windows.length - 1));
+    const exposed: ExposedWindow[] = [];
+
+    return windows.map((window, index) => {
+        const radius = radiusStep * Math.sqrt(index);
+        const angle = SPIRAL_INITIAL_ANGLE + (index - 1) * SPIRAL_ANGLE_STEP;
+        const centerX = Math.cos(angle) * radius;
+        const centerY = Math.sin(angle) * radius;
+        const fraction =
+            MINIMUM_EXPOSED_FRACTION +
+            (EXPOSURE_RESERVE_FRACTION * (windows.length - 1 - index)) /
+                Math.max(1, windows.length - 1);
+        const rectangleAtScale = (scale: number): LayoutRectangle => ({
+            x: centerX - (window.source.width * scale) / 2,
+            y: centerY - (window.source.height * scale) / 2,
+            width: window.source.width * scale,
+            height: window.source.height * scale,
+        });
+
+        const preservesExposure = (scale: number): boolean => {
+            const candidate = rectangleAtScale(scale);
+
+            return exposed.every(
+                previous =>
+                    previous.exposedArea -
+                        sum(
+                            previous.fragments.map(fragment =>
+                                intersectionArea(fragment, candidate)
+                            )
+                        ) >=
+                    previous.area * fraction
+            );
+        };
+
+        let scale = 1;
+
+        if (!preservesExposure(scale)) {
+            let upper = scale;
+
+            do {
+                upper = scale;
+                scale /= 2;
+
+                if (scale === 0)
+                    throw new RangeError('Cannot preserve visible window area');
+            } while (!preservesExposure(scale));
+
+            for (let step = 0; step < SCALE_SEARCH_STEPS; step++) {
+                const candidate = (scale + upper) / 2;
+
+                if (preservesExposure(candidate)) scale = candidate;
+                else upper = candidate;
+            }
+        }
+
+        const rectangle = rectangleAtScale(scale);
+
+        for (const previous of exposed) {
+            previous.fragments = previous.fragments.flatMap(fragment =>
+                subtractRectangle(fragment, rectangle)
+            );
+            previous.exposedArea = sum(
+                previous.fragments.map(
+                    fragment => fragment.width * fragment.height
+                )
+            );
+        }
+
+        exposed.push({
+            area: rectangle.width * rectangle.height,
+            exposedArea: rectangle.width * rectangle.height,
+            fragments: [rectangle],
+        });
+
+        return {
+            ...rectangle,
+            item: window.item,
+        };
+    });
+}
+
+function intersectionArea(
+    first: LayoutRectangle,
+    second: LayoutRectangle
+): number {
+    return (
+        Math.max(
+            0,
+            Math.min(first.x + first.width, second.x + second.width) -
+                Math.max(first.x, second.x)
+        ) *
+        Math.max(
+            0,
+            Math.min(first.y + first.height, second.y + second.height) -
+                Math.max(first.y, second.y)
+        )
+    );
+}
+
+function subtractRectangle(
+    source: LayoutRectangle,
+    cover: LayoutRectangle
+): LayoutRectangle[] {
+    if (intersectionArea(source, cover) === 0) return [source];
+
+    const left = Math.max(source.x, cover.x);
+    const top = Math.max(source.y, cover.y);
+    const right = Math.min(source.x + source.width, cover.x + cover.width);
+    const bottom = Math.min(source.y + source.height, cover.y + cover.height);
+
+    return [
+        {x: source.x, y: source.y, width: source.width, height: top - source.y},
+        {
+            x: source.x,
+            y: bottom,
+            width: source.width,
+            height: source.y + source.height - bottom,
+        },
+        {x: source.x, y: top, width: left - source.x, height: bottom - top},
+        {
+            x: right,
+            y: top,
+            width: source.x + source.width - right,
+            height: bottom - top,
+        },
+    ].filter(rectangle => rectangle.width > 0 && rectangle.height > 0);
+}
+
+function computeSpreadSlots<T>(
+    windows: readonly IndexedWindow<T>[],
+    area: LayoutRectangle,
+    options: GroupedOverviewLayoutOptions
+): (LayoutRectangle & {item: T})[] {
+    const cells = computeSpatialCells(
+        windows.map(window => createWindowSpatialItem(window)),
+        area,
+        options.windowGap,
+        options.spatialWeight
+    );
+
+    return cells.map(cell => ({
+        ...fitRectangle(
+            cell.item.item.source,
+            cell.rectangle,
+            options.maxWindowScale
+        ),
+        item: cell.item.item.item,
+    }));
+}
+
 function groupWindows<T>(
     windows: readonly GroupedOverviewWindow<T>[],
-    groupCountFactor: number
+    options: GroupedOverviewLayoutOptions
 ): PreparedApplicationGroup<T>[] {
     const knownKeys = new Set(
         windows
@@ -217,7 +408,13 @@ function groupWindows<T>(
 
     return Array.from(groupsByKey.values()).map(group => ({
         ...group,
-        weight: 1 + groupCountFactor * (Math.sqrt(group.windows.length) - 1),
+        weight:
+            1 +
+            options.groupCountFactor * (Math.sqrt(group.windows.length) - 1),
+        spiralSlots:
+            options.windowLayout === 'spiral'
+                ? prepareSpiralSlots(group.windows)
+                : [],
     }));
 }
 
@@ -533,6 +730,9 @@ function fitRectangle(
 }
 
 function validateOptions(options: GroupedOverviewLayoutOptions): void {
+    if (options.windowLayout !== 'spiral' && options.windowLayout !== 'spread')
+        throw new TypeError('Unknown grouped Overview window layout');
+
     assertNonNegativeFinite(options.groupGap, 'options.groupGap');
     assertNonNegativeFinite(options.groupPadding, 'options.groupPadding');
     assertNonNegativeFinite(options.windowGap, 'options.windowGap');

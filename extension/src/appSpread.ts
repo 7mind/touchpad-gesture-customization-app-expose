@@ -7,7 +7,7 @@ import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbn
 import {shouldShowInApplicationOverview} from './appOverviewWindowFilter.js';
 import {
     getOverviewWorkspaces,
-    unfreezeOverviewWorkspaceLayouts,
+    invalidateWorkspaceLayout,
 } from './overviewInternals.js';
 
 export class ApplicationWindowOverview {
@@ -50,7 +50,7 @@ export class ApplicationWindowOverview {
         this._disableSearch();
         this._addApplicationWorkspaceWindows();
         this._removeFilteredWorkspaceWindows();
-        unfreezeOverviewWorkspaceLayouts();
+        this._invalidateLayouts();
 
         this._hiddenSignalId = Main.overview.connect('hidden', () =>
             this.hide()
@@ -98,6 +98,12 @@ export class ApplicationWindowOverview {
 
         this._app = null;
         this._windows = [];
+        this._invalidateLayouts();
+    }
+
+    private _invalidateLayouts(): void {
+        for (const workspace of getOverviewWorkspaces())
+            invalidateWorkspaceLayout(workspace, {unfreeze: true});
     }
 
     restoreDefaultOverview(): void {
