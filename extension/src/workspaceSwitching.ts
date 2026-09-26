@@ -48,7 +48,6 @@ function disconnectTouchpadEventFromTracker(touchpadGesture: TouchpadGesture) {
 }
 
 class WorkspaceAnimationModifier {
-
     private _firstVal = 0;
     private _lastVal = 0;
     private _workspaceAnimation: WorkspaceAnimationController;
@@ -183,11 +182,9 @@ class WorkspaceAnimationModifier {
             this._swipeTracker.enabled = false;
         }
     }
-
 }
 
 export class WorkspaceSwitchingExtension implements ISubExtension {
-
     private _stateAdjustment: OverviewAdjustment;
     private _swipeTrackers: ShellSwipeTracker[];
     private _verticalWorkspaceAnimationModifier?: WorkspaceAnimationModifier;
@@ -358,5 +355,4 @@ export class WorkspaceSwitchingExtension implements ISubExtension {
             GObject.BindingFlags.SYNC_CREATE
         );
     }
-
 }

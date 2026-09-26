@@ -4,7 +4,6 @@ declare module 'resource:///org/gnome/shell/ui/swipeTracker.js' {
     import Shell from 'gi://Shell';
 
     class TouchpadGesture extends GObject.Object {
-
         enabled: boolean;
 
         destroy(): void;
@@ -13,11 +12,9 @@ declare module 'resource:///org/gnome/shell/ui/swipeTracker.js' {
             actor: Clutter.Actor | undefined,
             event: CustomEventType
         ): boolean;
-    
-}
+    }
 
     class SwipeTracker extends GObject.Object {
-
         constructor(
             actor: Clutter.Actor,
             orientation: Clutter.Orientation,
@@ -51,8 +48,7 @@ declare module 'resource:///org/gnome/shell/ui/swipeTracker.js' {
         _history: {
             reset(): void;
         };
-    
-}
+    }
 
     export type _SwipeTrackerOptionalParams = {
         allowTouch?: boolean;

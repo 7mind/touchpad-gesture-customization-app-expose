@@ -28,7 +28,6 @@ export type AppForwardBackKeyBinds = Record<
 >;
 
 export class ForwardBackGestureExtension implements ISubExtension {
-
     private _connectHandlers: number[];
     private _swipeTracker: SwipeTracker;
     private _keyboard: IVirtualKeyboard;
@@ -271,5 +270,4 @@ export class ForwardBackGestureExtension implements ISubExtension {
                 : Clutter.KEY_Forward,
         ];
     }
-
 }

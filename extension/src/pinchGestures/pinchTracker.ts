@@ -21,7 +21,6 @@ const DECELERATION_PARABOLA_MULTIPLIER = 0.35;
 declare type HisotyEvent = {time: number; delta: number};
 
 class EventHistoryTracker {
-
     private _data: HisotyEvent[] = [];
 
     reset() {
@@ -55,7 +54,6 @@ class EventHistoryTracker {
 
         return totalDelta / period;
     }
-
 }
 
 // define enum
@@ -81,7 +79,6 @@ export const TouchpadPinchGesture = GObject.registerClass(
         },
     },
     class TouchpadPinchGesture extends GObject.Object {
-
         private _nfingers: number[];
         private _allowedModes: Shell.ActionMode;
         private _state = TouchpadState.NONE;
@@ -356,6 +353,5 @@ export const TouchpadPinchGesture = GObject.registerClass(
                 this._stageCaptureEvent = 0;
             }
         }
-    
-}
+    }
 );

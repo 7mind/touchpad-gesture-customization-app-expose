@@ -11,7 +11,6 @@ import {
 } from '../constants.js';
 
 export class BrightnessControlGestureExtension implements ISubExtension {
-
     private _verticalSwipeTracker?: SwipeTracker;
     private _horizontalSwipeTracker?: SwipeTracker;
     private _verticalConnectHandlers?: number[];
@@ -172,5 +171,4 @@ export class BrightnessControlGestureExtension implements ISubExtension {
         duration: number,
         progress: number
     ): void {}
-
 }

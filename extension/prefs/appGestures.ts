@@ -50,7 +50,6 @@ const AppChooserDialog = GObject.registerClass(
         Signals: {'app-selected': {param_types: [GObject.TYPE_STRING]}},
     },
     class GIE_AppChooserDialog extends Adw.PreferencesWindow {
-
         private _group: Adw.PreferencesGroup;
 
         /**
@@ -97,8 +96,7 @@ const AppChooserDialog = GObject.registerClass(
                 this.close();
             });
         }
-    
-}
+    }
 );
 
 /** type definition for gesture setting(keybind and reverse flag) for app */
@@ -120,7 +118,6 @@ const AppGestureSettingsRow = GObject.registerClass(
         },
     },
     class GIE_AppGestureSettingsRow extends Adw.ExpanderRow {
-
         private _keyBindCombo: Adw.ComboRow;
         private _reverseButton: Gtk.Switch;
 
@@ -194,8 +191,7 @@ const AppGestureSettingsRow = GObject.registerClass(
                 this._reverseButton.active
             );
         }
-    
-}
+    }
 );
 
 /**
@@ -203,7 +199,6 @@ const AppGestureSettingsRow = GObject.registerClass(
  */
 const AppKeybindingGesturePrefsGroup = GObject.registerClass(
     class GIE_AppKeybindingGesturePrefsGroup extends Adw.PreferencesGroup {
-
         private _settings: GioSettings;
         private _prefsWindow: Adw.PreferencesWindow;
         private _appRows: Map<string, typeof AppGestureSettingsRow.prototype>;
@@ -449,8 +444,7 @@ const AppKeybindingGesturePrefsGroup = GObject.registerClass(
 
             return appGestureModel;
         }
-    
-}
+    }
 );
 
 /**

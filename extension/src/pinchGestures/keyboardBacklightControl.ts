@@ -6,7 +6,6 @@ import {loadInterfaceXML} from 'resource:///org/gnome/shell/misc/fileUtils.js';
 import {OSD_FRAMETIME_CAP_MS} from '../../constants.js';
 
 export class PinchKeyboardBacklightControlExtension implements ISubExtension {
-
     private _pinchTracker?: typeof TouchpadPinchGesture.prototype;
     private _brightnessProxy?: Gio.DBusProxy;
     private _lastOsdShowTimestamp: number = 0;
@@ -131,5 +130,4 @@ export class PinchKeyboardBacklightControlExtension implements ISubExtension {
         _duration: number,
         _endProgress: number
     ): void {}
-
 }

@@ -55,7 +55,6 @@ export const TouchpadSwipeGesture = GObject.registerClass(
         },
     },
     class TouchpadSwipeGesture extends GObject.Object {
-
         private _nfingers: number[];
         private _allowedModes: Shell.ActionMode;
         orientation: Clutter.Orientation;
@@ -285,8 +284,7 @@ export const TouchpadSwipeGesture = GObject.registerClass(
                 this._stageCaptureEvent = null;
             }
         }
-    
-}
+    }
 );
 
 export function createSwipeTracker(

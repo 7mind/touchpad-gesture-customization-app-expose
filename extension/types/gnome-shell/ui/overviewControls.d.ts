@@ -11,18 +11,15 @@ declare module 'resource:///org/gnome/shell/ui/overviewControls.js' {
     }
 
     class OverviewAdjustment extends St.Adjustment {
-
         getStateTransitionParams(): {
             initialState: ControlsState;
             finalState: ControlsState;
             currentState: number;
             progress: number;
         };
-    
-}
+    }
 
     class ControlsManager extends St.Widget {
-
         _stateAdjustment: OverviewAdjustment;
         layout_Manager: Clutter.BoxLayout & {
             _searchEntry: St.Bin;
@@ -39,6 +36,5 @@ declare module 'resource:///org/gnome/shell/ui/overviewControls.js' {
         _searchController: {
             searchActive: boolean;
         };
-    
-}
+    }
 }
