@@ -62,8 +62,8 @@ Adjust these to match your OS before contributing.
 ## Linting & formatting
 - Use the repository ESLint/Prettier configuration:
   ```
-  npm run lint
-  npm run format
+  npm run lint:extension
+  npm run lint:package
   ```
 - Fix lint errors before opening a PR.
 
