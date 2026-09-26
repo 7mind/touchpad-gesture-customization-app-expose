@@ -34,6 +34,7 @@ const PINCH_OUT_ANIMATION = {
 declare type Type_TouchpadPinchGesture = typeof TouchpadPinchGesture.prototype;
 
 export class OpenCloseWindowTabExtension implements ISubExtension {
+
     private _actionType:
         | PinchGestureType.OPEN_CLOSE_DOCUMENT
         | PinchGestureType.OPEN_CLOSE_WINDOW;
@@ -249,4 +250,5 @@ export class OpenCloseWindowTabExtension implements ISubExtension {
 
         this._focusWindow = undefined;
     }
+
 }

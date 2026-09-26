@@ -8,12 +8,14 @@ import {OverviewNavigationState} from '../common/settings.js';
 import {ExtSettings, OverviewControlsState} from '../constants.js';
 
 enum ExtensionState {
+
     // DISABLED = 0,
     DEFAULT = 1,
     CUSTOM = 2,
 }
 
 export class OverviewRoundTripGestureExtension implements ISubExtension {
+
     private _stateAdjustment: OverviewAdjustment;
     private _oldGetStateTransitionParams: typeof OverviewAdjustment.prototype.getStateTransitionParams;
     private _progress = 0;
@@ -274,4 +276,5 @@ export class OverviewRoundTripGestureExtension implements ISubExtension {
                 ];
         }
     }
+
 }

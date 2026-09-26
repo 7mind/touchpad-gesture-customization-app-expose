@@ -5,6 +5,7 @@ import {getVirtualKeyboard} from './utils/keyboard.js';
 import {ExtSettings} from '../constants.js';
 
 export class MediaControlGestureExtension implements ISubExtension {
+
     private _verticalTouchpadSwipeTracker?: typeof TouchpadSwipeGesture.prototype;
     private _horizontalTouchpadSwipeTracker?: typeof TouchpadSwipeGesture.prototype;
     private _verticalConnectHandlers?: number[];
@@ -98,4 +99,5 @@ export class MediaControlGestureExtension implements ISubExtension {
             }),
         ];
     }
+
 }

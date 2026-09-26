@@ -15,6 +15,7 @@ const VolumeIcons = [
 ];
 
 export class PinchVolumeControlExtension implements ISubExtension {
+
     private _pinchTracker?: typeof TouchpadPinchGesture.prototype;
     private _controller?: Gvc.MixerControl;
     private _sink?: Gvc.MixerStream;
@@ -150,4 +151,5 @@ export class PinchVolumeControlExtension implements ISubExtension {
         _duration: number,
         _endProgress: number
     ): void {}
+
 }

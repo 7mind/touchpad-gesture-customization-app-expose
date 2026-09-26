@@ -12,16 +12,19 @@ declare type IconList =
 
 const Circle = GObject.registerClass(
     class GIE_Circle extends St.Widget {
+
         constructor(style_class: string) {
             style_class = `gie-circle ${style_class}`;
             super({style_class});
             this.set_pivot_point(0.5, 0.5);
         }
-    }
+    
+}
 );
 
 export const ArrowIconAnimation = GObject.registerClass(
     class GIE_ArrowIcon extends St.Widget {
+
         private _inner_circle: typeof Circle.prototype;
         private _outer_circle: typeof Circle.prototype;
         private _arrow_icon: St.Icon;
@@ -178,5 +181,6 @@ export const ArrowIconAnimation = GObject.registerClass(
             this._extension_path = '';
             super.destroy();
         }
-    }
+    
+}
 );

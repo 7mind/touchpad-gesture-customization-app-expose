@@ -21,6 +21,7 @@ const VolumeIcons = [
 ];
 
 export class VolumeControlGestureExtension implements ISubExtension {
+
     private _verticalSwipeTracker?: SwipeTracker;
     private _horizontalSwipeTracker?: SwipeTracker;
     private _verticalConnectHandlers?: number[];
@@ -208,4 +209,5 @@ export class VolumeControlGestureExtension implements ISubExtension {
         duration: number,
         progress: number
     ): void {}
+
 }

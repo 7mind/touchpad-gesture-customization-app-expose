@@ -27,6 +27,7 @@ import {PinchVolumeControlExtension} from './src/pinchGestures/volumeControl.js'
 import {PinchKeyboardBacklightControlExtension} from './src/pinchGestures/keyboardBacklightControl.js';
 
 export default class TouchpadGestureCustomization extends Extension {
+
     private _extensions: ISubExtension[];
     settings?: Gio.Settings;
     private _settingChangedId = 0;
@@ -546,4 +547,5 @@ export default class TouchpadGestureCustomization extends Extension {
         this._extensions.reverse().forEach(extension => extension.destroy());
         this._extensions = [];
     }
+
 }

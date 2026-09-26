@@ -33,6 +33,7 @@ enum GestureTileState {
 
 const TilePreview = GObject.registerClass(
     class TilePreview extends St.Widget {
+
         private _adjustment: St.Adjustment;
         private _window?: Meta.Window;
         private _direction = Clutter.Orientation.VERTICAL;
@@ -283,10 +284,12 @@ const TilePreview = GObject.registerClass(
             maximizedBox.height -= 2 * height;
             return maximizedBox;
         }
-    }
+    
+}
 );
 
 export class SnapWindowExtension implements ISubExtension {
+
     private _swipeTracker: typeof SwipeTracker.prototype;
     private _connectors: number[] = [];
     private _tilePreview: typeof TilePreview.prototype;
@@ -458,4 +461,5 @@ export class SnapWindowExtension implements ISubExtension {
     _gestureEnd(_tracker: never, duration: number, progress: number): void {
         this._tilePreview.finish(duration, progress);
     }
+
 }

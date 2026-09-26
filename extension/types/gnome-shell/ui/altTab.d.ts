@@ -4,6 +4,7 @@ declare module 'resource:///org/gnome/shell/ui/altTab.js' {
     import {SwitcherPopup} from 'resource:///org/gnome/shell/ui/switcherPopup.js';
 
     class WindowSwitcherPopup extends SwitcherPopup {
+
         _items: St.Widget &
             {
                 window: Meta.Window;
@@ -16,5 +17,6 @@ declare module 'resource:///org/gnome/shell/ui/altTab.js' {
         _noModsTimeoutId: number;
         _initialDelayTimeoutId: number;
         _selectedIndex: number;
-    }
+    
+}
 }
