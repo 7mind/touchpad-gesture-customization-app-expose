@@ -24,6 +24,7 @@ import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
 import {MediaControlGestureExtension} from './src/mediaControl.js';
 import {PinchVolumeControlExtension} from './src/pinchGestures/volumeControl.js';
+import {PinchKeyboardBacklightControlExtension} from './src/pinchGestures/keyboardBacklightControl.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -262,6 +263,17 @@ export default class TouchpadGestureCustomization extends Extension {
         if (pinchVolumeControlFingers?.length)
             this._extensions.push(
                 new PinchVolumeControlExtension(pinchVolumeControlFingers)
+            );
+
+        // pinch to control keyboard backlight
+        const pinchKeyboardControlFingers = pinchToFingersMap.get(
+            PinchGestureType.KEYBOARD_BACKLIGHT_CONTROL
+        );
+        if (pinchKeyboardControlFingers?.length)
+            this._extensions.push(
+                new PinchKeyboardBacklightControlExtension(
+                    pinchKeyboardControlFingers
+                )
             );
 
         // TODO: consider having an option for 'hold and swipe gestures' that can either
