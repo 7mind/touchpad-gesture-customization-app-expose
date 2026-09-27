@@ -1,9 +1,17 @@
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import St from 'gi://St';
+import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as WorkspaceModule from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WindowPreview} from 'resource:///org/gnome/shell/ui/windowPreview.js';
 import {ApplicationWindowOverview} from './appSpread.js';
+import {
+    APP_GROUP_HEADER_HEIGHT,
+    WorkspaceAppGroupChrome,
+    type AppGroupChromeLayout,
+} from './appGroupChrome.js';
+import type {ApplicationGroupLayout} from './groupedOverviewLayout.js';
 import {
     ApplicationGroupedOverviewExtension,
     type GroupedOverviewPreview,
@@ -41,6 +49,20 @@ export function createApplicationGroupedOverviewExtension(
             ? null
             : workspaceLayout.prototype;
     const tracker = Shell.WindowTracker.get_default();
+    const chromeByLayout = new Map<
+        GroupedWorkspaceLayout<GnomeWindowPreview>,
+        WorkspaceAppGroupChrome
+    >();
+    const pendingChrome = new Map<
+        GroupedWorkspaceLayout<GnomeWindowPreview>,
+        {
+            groups: ApplicationGroupLayout<GnomeWindowPreview>[];
+            sourceId: number;
+            destroyId: number;
+        }
+    >();
+    const scaleFactor = () =>
+        St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     const restorePreviewStacking = (previews: GnomeWindowPreview[]) => {
         const windows = global.display.sort_windows_by_stacking(
@@ -63,6 +85,75 @@ export function createApplicationGroupedOverviewExtension(
     >({
         workspaceLayoutPrototype,
         isApplicationOverviewActive: () => applicationOverview.active,
+        getGroupHeaderHeight: () => APP_GROUP_HEADER_HEIGHT * scaleFactor(),
+        updateGroupChrome(layout, groups) {
+            const pending = pendingChrome.get(layout);
+
+            if (pending !== undefined) {
+                pending.groups = groups;
+                return;
+            }
+
+            if (
+                !chromeByLayout.has(layout) &&
+                !groups.some(group => group.header !== null)
+            )
+                return;
+
+            const chromeLayout = layout as unknown as AppGroupChromeLayout;
+            const update = {groups, sourceId: 0, destroyId: 0};
+            update.sourceId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                pendingChrome.delete(layout);
+                chromeLayout._container.disconnect(update.destroyId);
+
+                try {
+                    let chrome = chromeByLayout.get(layout);
+
+                    if (
+                        chrome === undefined &&
+                        update.groups.some(group => group.header !== null)
+                    ) {
+                        chrome = new WorkspaceAppGroupChrome(
+                            chromeLayout,
+                            Main.overview._overview._controls._searchController,
+                            tracker,
+                            () => chromeByLayout.delete(layout)
+                        );
+                        chromeByLayout.set(layout, chrome);
+                    }
+
+                    if (chrome !== undefined) chrome.update(update.groups);
+                } catch (error) {
+                    console.error(
+                        '[touchpad-gesture-customization] Grouped Overview headers could not be updated',
+                        error
+                    );
+                }
+
+                return GLib.SOURCE_REMOVE;
+            });
+            update.destroyId = chromeLayout._container.connect(
+                'destroy',
+                () => {
+                    GLib.source_remove(update.sourceId);
+                    pendingChrome.delete(layout);
+                }
+            );
+            pendingChrome.set(layout, update);
+        },
+        destroyGroupChrome() {
+            for (const [layout, pending] of pendingChrome) {
+                GLib.source_remove(pending.sourceId);
+                (
+                    layout as unknown as AppGroupChromeLayout
+                )._container.disconnect(pending.destroyId);
+            }
+
+            pendingChrome.clear();
+            for (const chrome of chromeByLayout.values()) chrome.destroy();
+
+            chromeByLayout.clear();
+        },
         setPreviewStacking: setOverviewPreviewStacking,
         restorePreviewStacking,
         restoreStacking() {

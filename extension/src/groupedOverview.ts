@@ -2,6 +2,7 @@ import {
     createGroupedOverviewLayoutOptions,
     GroupedOverviewLayoutEngine,
     LayoutAreaTooSmallError,
+    type ApplicationGroupLayout,
     type GroupedOverviewWindow,
     type LayoutRectangle,
 } from './groupedOverviewLayout.js';
@@ -79,6 +80,12 @@ export type ApplicationGroupedOverviewDependencies<TPreview, TWindow> = {
     resolveAppKey(window: TWindow): string | null;
     resolveFallbackSource(window: TWindow): LayoutRectangle;
     isApplicationOverviewActive(): boolean;
+    getGroupHeaderHeight(): number;
+    updateGroupChrome(
+        layout: GroupedWorkspaceLayout<TPreview>,
+        groups: ApplicationGroupLayout<TPreview>[]
+    ): void;
+    destroyGroupChrome(): void;
     setPreviewStacking(previews: TPreview[]): void;
     restorePreviewStacking(previews: TPreview[]): void;
     restoreStacking(): void;
@@ -97,6 +104,9 @@ class ApplicationGroupedLayoutStrategy<
     private readonly _enabled: () => boolean;
     private readonly _setStacking: (previews: TPreview[]) => void;
     private readonly _restoreStacking: () => void;
+    private readonly _publishGroups: (
+        groups: ApplicationGroupLayout<TPreview>[]
+    ) => void;
 
     constructor(
         fallbackStrategy: WorkspaceLayoutStrategy<TPreview>,
@@ -104,7 +114,8 @@ class ApplicationGroupedLayoutStrategy<
         report: (message: string, error: unknown | null) => void,
         enabled: () => boolean,
         setStacking: (previews: TPreview[]) => void,
-        restoreStacking: () => void
+        restoreStacking: () => void,
+        publishGroups: (groups: ApplicationGroupLayout<TPreview>[]) => void
     ) {
         this._fallbackStrategy = fallbackStrategy;
         this._fallbackLayout = fallbackLayout;
@@ -112,6 +123,7 @@ class ApplicationGroupedLayoutStrategy<
         this._enabled = enabled;
         this._setStacking = setStacking;
         this._restoreStacking = restoreStacking;
+        this._publishGroups = publishGroups;
     }
 
     computeWindowSlots(
@@ -139,6 +151,7 @@ class ApplicationGroupedLayoutStrategy<
                     slot.item,
                 ]);
             this._setStacking(slots.map(slot => slot[4]));
+            this._publishGroups(groupedLayout.groups);
             return slots;
         } catch (error) {
             this._restoreStacking();
@@ -220,6 +233,7 @@ export class ApplicationGroupedOverviewExtension<
         >();
 
         const restoreStacking = (layout: GroupedWorkspaceLayout<TPreview>) => {
+            dependencies.updateGroupChrome(layout, []);
             if (!stackingByLayout.delete(layout)) return;
             dependencies.restorePreviewStacking(layout._sortedWindows);
         };
@@ -259,6 +273,10 @@ export class ApplicationGroupedOverviewExtension<
                     dependencies.isApplicationOverviewActive()
                         ? 'spread'
                         : 'spiral';
+                options.groupHeaderHeight =
+                    options.windowLayout === 'spiral'
+                        ? dependencies.getGroupHeaderHeight()
+                        : 0;
                 if (options.windowLayout === 'spread') restoreStacking(this);
                 const windows: GroupedOverviewWindow<TPreview>[] =
                     this._sortedWindows.map(preview => {
@@ -283,6 +301,7 @@ export class ApplicationGroupedOverviewExtension<
                     });
 
                 if (
+                    windows.length === 0 ||
                     windows.some(window => isPendingAllocation(window.source))
                 ) {
                     restoreStacking(this);
@@ -305,7 +324,8 @@ export class ApplicationGroupedOverviewExtension<
                         stackingByLayout.set(this, previews);
                         dependencies.setPreviewStacking(previews);
                     },
-                    () => restoreStacking(this)
+                    () => restoreStacking(this),
+                    groups => dependencies.updateGroupChrome(this, groups)
                 );
 
                 return groupedLayout;
@@ -348,6 +368,7 @@ export class ApplicationGroupedOverviewExtension<
     }
 
     destroy(): void {
+        this._dependencies.destroyGroupChrome();
         const prototype = this._dependencies.workspaceLayoutPrototype;
         const installedCreateBestLayout = this._installedCreateBestLayout;
         const originalCreateBestLayout = this._originalCreateBestLayout;

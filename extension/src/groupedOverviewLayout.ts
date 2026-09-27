@@ -9,6 +9,7 @@ export type GroupedOverviewLayoutOptions = {
     windowLayout: 'spiral' | 'spread';
     groupGap: number;
     groupPadding: number;
+    groupHeaderHeight: number;
     windowGap: number;
     maxWindowScale: number;
     groupCountFactor: number;
@@ -25,6 +26,7 @@ export type ApplicationGroupLayout<T> = {
     key: string;
     items: T[];
     region: LayoutRectangle;
+    header: LayoutRectangle | null;
     weight: number;
 };
 
@@ -108,6 +110,7 @@ export function createGroupedOverviewLayoutOptions(
         windowLayout: 'spiral',
         groupGap: windowGap * GROUP_GAP_MULTIPLIER,
         groupPadding: windowGap * GROUP_PADDING_MULTIPLIER,
+        groupHeaderHeight: 0,
         windowGap,
         maxWindowScale: MAX_WINDOW_SCALE,
         groupCountFactor: GROUP_COUNT_FACTOR,
@@ -154,10 +157,31 @@ export class GroupedOverviewLayoutEngine<T> {
 
         for (const outerCell of outerCells) {
             const group = outerCell.item.item;
-            const innerArea = insetRectangle(
+            const paddedArea = insetRectangle(
                 outerCell.rectangle,
                 this._options.groupPadding
             );
+            const headerHeight = this._options.groupHeaderHeight;
+            const header =
+                headerHeight === 0
+                    ? null
+                    : {
+                          ...paddedArea,
+                          height: headerHeight,
+                      };
+            const reservedHeight =
+                header === null ? 0 : headerHeight + this._options.groupPadding;
+            const innerArea = {
+                ...paddedArea,
+                y: paddedArea.y + reservedHeight,
+                height: paddedArea.height - reservedHeight,
+            };
+
+            if (innerArea.height < MINIMUM_LAYOUT_SIZE)
+                throw new LayoutAreaTooSmallError(
+                    'Layout area is too small for application headers'
+                );
+
             const innerSlots =
                 this._options.windowLayout === 'spiral'
                     ? computeSpiralSlots(
@@ -184,6 +208,7 @@ export class GroupedOverviewLayoutEngine<T> {
                 key: group.key,
                 items,
                 region: outerCell.rectangle,
+                header,
                 weight: outerCell.item.weight,
             });
         }
@@ -735,6 +760,10 @@ function validateOptions(options: GroupedOverviewLayoutOptions): void {
 
     assertNonNegativeFinite(options.groupGap, 'options.groupGap');
     assertNonNegativeFinite(options.groupPadding, 'options.groupPadding');
+    assertNonNegativeFinite(
+        options.groupHeaderHeight,
+        'options.groupHeaderHeight'
+    );
     assertNonNegativeFinite(options.windowGap, 'options.windowGap');
     assertPositiveFinite(options.maxWindowScale, 'options.maxWindowScale');
     assertNonNegativeFinite(

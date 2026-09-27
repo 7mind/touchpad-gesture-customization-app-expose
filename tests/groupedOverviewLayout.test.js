@@ -367,4 +367,44 @@ for (const count of [1, 2, 3, 12, 40]) {
     }
 }
 
+{
+    const windows = [
+        preview('editor-1', 'editor', 0, 0, 1000, 700),
+        preview('editor-2', 'editor', 100, 50, 800, 600),
+        preview('browser', 'browser', 900, 0, 600, 600),
+    ];
+    const result = layoutWindowsByApplication(windows, AREA, {
+        ...OPTIONS,
+        groupHeaderHeight: 36,
+    });
+
+    for (const group of result.groups) {
+        assert.ok(
+            group.header,
+            'application groups must reserve an icon/name header'
+        );
+        assert.equal(group.header.height, 36);
+        assert.ok(contains(group.region, group.header));
+
+        for (const slot of result.slots.filter(
+            slot => slot.groupKey === group.key
+        ))
+            assert.ok(
+                slot.y >=
+                    group.header.y + group.header.height + OPTIONS.groupPadding,
+                'application headers must not cover window previews'
+            );
+    }
+
+    assert.throws(
+        () =>
+            layoutWindowsByApplication(
+                windows.slice(0, 1),
+                {x: 0, y: 0, width: 100, height: 20},
+                {...OPTIONS, groupHeaderHeight: 36}
+            ),
+        /too small/
+    );
+}
+
 console.log('grouped overview layout tests passed');

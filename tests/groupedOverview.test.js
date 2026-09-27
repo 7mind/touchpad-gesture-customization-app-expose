@@ -10,6 +10,8 @@ function createHarness(prototype) {
     let resolutions = 0;
     let applicationOverviewActive = false;
     let stacking = [];
+    let headerHeight = 0;
+    const chrome = new Map();
     const extension = new ApplicationGroupedOverviewExtension({
         workspaceLayoutPrototype: prototype,
         resolveAppKey: window => {
@@ -20,6 +22,9 @@ function createHarness(prototype) {
             window.frame ?? {x: 0, y: 0, width: 0, height: 0},
         invalidateLayouts: () => invalidations++,
         isApplicationOverviewActive: () => applicationOverviewActive,
+        getGroupHeaderHeight: () => headerHeight,
+        updateGroupChrome: (layout, groups) => chrome.set(layout, groups),
+        destroyGroupChrome: () => chrome.clear(),
         setPreviewStacking: previews => {
             stacking = [...previews];
         },
@@ -38,6 +43,10 @@ function createHarness(prototype) {
         invalidations: () => invalidations,
         resolutions: () => resolutions,
         stacking: () => stacking,
+        chrome: layout => chrome.get(layout),
+        setHeaderHeight: height => {
+            headerHeight = height;
+        },
         setStacking: previews => {
             stacking = [...previews];
         },
@@ -452,6 +461,54 @@ function createStackablePreview(parent) {
     workspace.children.splice(workspace.children.indexOf(first), 1);
     setOverviewPreviewStacking([third, first, second]);
     assert.deepEqual(workspace.children, [third, second]);
+}
+
+{
+    const {prototype} = createSupportedPrototype();
+    const harness = createHarness(prototype);
+    const layout = createLayout(prototype, [
+        {
+            metaWindow: {appKey: 'editor'},
+            boundingBox: {x: 0, y: 0, width: 800, height: 600},
+        },
+    ]);
+    const area = {x: 0, y: 0, width: 1600, height: 900};
+    harness.setHeaderHeight(36);
+    harness.extension.apply();
+    let engine = layout._createBestLayout(area);
+    layout._layoutStrategy.computeWindowSlots(engine, area);
+    assert.equal(harness.chrome(layout)[0].header.height, 36);
+    const originalWindows = layout._sortedWindows;
+    layout._sortedWindows = [];
+    layout._createBestLayout(area);
+    assert.deepEqual(
+        harness.chrome(layout),
+        [],
+        'empty workspaces must clear headers even when Shell skips slot calculation'
+    );
+    layout._sortedWindows = originalWindows;
+    engine = layout._createBestLayout(area);
+    layout._layoutStrategy.computeWindowSlots(engine, area);
+    layout._layoutStrategy.computeWindowSlots(engine, {...area, height: 10});
+    assert.deepEqual(
+        harness.chrome(layout),
+        [],
+        'stock fallback must clear stale headers'
+    );
+    harness.setApplicationOverviewActive(true);
+    engine = layout._createBestLayout(area);
+    layout._layoutStrategy.computeWindowSlots(engine, area);
+    assert.equal(
+        harness.chrome(layout)[0].header,
+        null,
+        'App Exposé must reserve no header space'
+    );
+    harness.extension.destroy();
+    assert.equal(
+        harness.chrome(layout),
+        undefined,
+        'disable must clear all published chrome'
+    );
 }
 
 console.log('grouped overview lifecycle tests passed');
