@@ -10,6 +10,7 @@ export type GroupedOverviewLayoutOptions = {
     groupGap: number;
     groupPadding: number;
     groupHeaderHeight: number;
+    groupHeaderPosition: 'top' | 'bottom';
     windowGap: number;
     maxWindowScale: number;
     groupCountFactor: number;
@@ -111,6 +112,7 @@ export function createGroupedOverviewLayoutOptions(
         groupGap: windowGap * GROUP_GAP_MULTIPLIER,
         groupPadding: windowGap * GROUP_PADDING_MULTIPLIER,
         groupHeaderHeight: 0,
+        groupHeaderPosition: 'top',
         windowGap,
         maxWindowScale: MAX_WINDOW_SCALE,
         groupCountFactor: GROUP_COUNT_FACTOR,
@@ -162,6 +164,7 @@ export class GroupedOverviewLayoutEngine<T> {
                 this._options.groupPadding
             );
             const headerHeight = this._options.groupHeaderHeight;
+            const bottomHeader = this._options.groupHeaderPosition === 'bottom';
             const header =
                 headerHeight === 0
                     ? null
@@ -173,7 +176,7 @@ export class GroupedOverviewLayoutEngine<T> {
                 header === null ? 0 : headerHeight + this._options.groupPadding;
             const innerArea = {
                 ...paddedArea,
-                y: paddedArea.y + reservedHeight,
+                y: paddedArea.y + (bottomHeader ? 0 : reservedHeight),
                 height: paddedArea.height - reservedHeight,
             };
 
@@ -195,6 +198,18 @@ export class GroupedOverviewLayoutEngine<T> {
                           this._options
                       );
             const items: T[] = [];
+
+            if (header !== null && bottomHeader) {
+                const left = Math.min(...innerSlots.map(slot => slot.x));
+                const right = Math.max(
+                    ...innerSlots.map(slot => slot.x + slot.width)
+                );
+                header.x = left;
+                header.width = right - left;
+                header.y =
+                    Math.max(...innerSlots.map(slot => slot.y + slot.height)) +
+                    this._options.groupPadding;
+            }
 
             for (const slot of innerSlots) {
                 items.push(slot.item);

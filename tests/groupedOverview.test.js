@@ -23,6 +23,7 @@ function createHarness(prototype) {
         invalidateLayouts: () => invalidations++,
         isApplicationOverviewActive: () => applicationOverviewActive,
         getGroupHeaderHeight: () => headerHeight,
+        getGroupHeaderPosition: () => 'top',
         updateGroupChrome: (layout, groups) => chrome.set(layout, groups),
         destroyGroupChrome: () => chrome.clear(),
         setPreviewStacking: previews => {

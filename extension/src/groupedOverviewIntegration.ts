@@ -8,6 +8,7 @@ import {WindowPreview} from 'resource:///org/gnome/shell/ui/windowPreview.js';
 import {ApplicationWindowOverview} from './appSpread.js';
 import {
     APP_GROUP_HEADER_HEIGHT,
+    APP_GROUP_STACK_ICON_SIZE,
     WorkspaceAppGroupChrome,
     type AppGroupChromeLayout,
 } from './appGroupChrome.js';
@@ -26,9 +27,20 @@ import {
     getOverviewWorkspaces,
     invalidateWorkspaceLayout,
 } from './overviewInternals.js';
+import {GroupedOverviewAppearance} from '../common/groupedOverviewAppearance.js';
+import {
+    GroupedOverviewPresentation,
+    type PresentedOverviewPreview,
+} from './groupedOverviewPresentation.js';
+import type {
+    OverviewPreviewIcons,
+    IconOverviewPreview,
+} from './overviewPreviewIcons.js';
 
 type GnomeWindowPreview = GroupedOverviewPreview<Meta.Window> &
-    StackableOverviewPreview;
+    StackableOverviewPreview &
+    PresentedOverviewPreview &
+    IconOverviewPreview;
 
 type GnomeWorkspaceModule = {
     WorkspaceLayout?: {
@@ -37,7 +49,9 @@ type GnomeWorkspaceModule = {
 };
 
 export function createApplicationGroupedOverviewExtension(
-    applicationOverview: ApplicationWindowOverview
+    applicationOverview: ApplicationWindowOverview,
+    appearance: GroupedOverviewAppearance,
+    icons: OverviewPreviewIcons
 ): ISubExtension {
     const workspaceModule = WorkspaceModule as unknown as GnomeWorkspaceModule;
     const workspaceLayout = workspaceModule.WorkspaceLayout;
@@ -49,6 +63,9 @@ export function createApplicationGroupedOverviewExtension(
             ? null
             : workspaceLayout.prototype;
     const tracker = Shell.WindowTracker.get_default();
+    const presentation = new GroupedOverviewPresentation(message =>
+        console.warn(`[touchpad-gesture-customization] ${message}`)
+    );
     const chromeByLayout = new Map<
         GroupedWorkspaceLayout<GnomeWindowPreview>,
         WorkspaceAppGroupChrome
@@ -65,6 +82,8 @@ export function createApplicationGroupedOverviewExtension(
         St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     const restorePreviewStacking = (previews: GnomeWindowPreview[]) => {
+        presentation.restore(previews);
+        icons.setGrouped(previews, false);
         const windows = global.display.sort_windows_by_stacking(
             previews.map(preview => preview.metaWindow)
         );
@@ -85,7 +104,14 @@ export function createApplicationGroupedOverviewExtension(
     >({
         workspaceLayoutPrototype,
         isApplicationOverviewActive: () => applicationOverview.active,
-        getGroupHeaderHeight: () => APP_GROUP_HEADER_HEIGHT * scaleFactor(),
+        getGroupHeaderHeight: () =>
+            (appearance === GroupedOverviewAppearance.APPLICATION_HEADER
+                ? APP_GROUP_HEADER_HEIGHT
+                : APP_GROUP_STACK_ICON_SIZE) * scaleFactor(),
+        getGroupHeaderPosition: () =>
+            appearance === GroupedOverviewAppearance.APPLICATION_HEADER
+                ? 'top'
+                : 'bottom',
         updateGroupChrome(layout, groups) {
             const pending = pendingChrome.get(layout);
 
@@ -117,6 +143,7 @@ export function createApplicationGroupedOverviewExtension(
                             chromeLayout,
                             Main.overview._overview._controls._searchController,
                             tracker,
+                            appearance,
                             () => chromeByLayout.delete(layout)
                         );
                         chromeByLayout.set(layout, chrome);
@@ -142,6 +169,8 @@ export function createApplicationGroupedOverviewExtension(
             pendingChrome.set(layout, update);
         },
         destroyGroupChrome() {
+            presentation.destroy();
+
             for (const [layout, pending] of pendingChrome) {
                 GLib.source_remove(pending.sourceId);
                 (
@@ -154,7 +183,11 @@ export function createApplicationGroupedOverviewExtension(
 
             chromeByLayout.clear();
         },
-        setPreviewStacking: setOverviewPreviewStacking,
+        setPreviewStacking(previews) {
+            icons.setGrouped(previews, true);
+            presentation.apply(previews);
+            setOverviewPreviewStacking(previews);
+        },
         restorePreviewStacking,
         restoreStacking() {
             for (const workspace of getOverviewWorkspaces()) {

@@ -407,4 +407,29 @@ for (const count of [1, 2, 3, 12, 40]) {
     );
 }
 
+{
+    const result = layoutWindowsByApplication(
+        [
+            preview('editor-1', 'editor', 0, 0, 800, 600),
+            preview('editor-2', 'editor', 10, 10, 500, 400),
+            preview('browser', 'browser', 900, 0, 600, 600),
+        ],
+        AREA,
+        {...OPTIONS, groupHeaderHeight: 64, groupHeaderPosition: 'bottom'}
+    );
+    for (const group of result.groups) {
+        const slots = result.slots.filter(slot => slot.groupKey === group.key);
+        assert.ok(contains(group.region, group.header));
+        assert.equal(
+            group.header.y,
+            Math.max(...slots.map(slot => slot.y + slot.height)) +
+                OPTIONS.groupPadding
+        );
+        assert.equal(group.header.height, 64);
+        assert.equal(group.header.x, Math.min(...slots.map(slot => slot.x)));
+        for (const slot of slots)
+            assert.ok(slot.y + slot.height <= group.header.y);
+    }
+}
+
 console.log('grouped overview layout tests passed');

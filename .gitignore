@@ -4,6 +4,7 @@ build/
 node_modules/
 /debug/20260923-120000-headless-*
 /debug/grouped-overview-runtime/
+/debug/20260928-203300-preferences-probe.js
 
 # cq ledger runtime store (not tracked; docs/*.md are the tracked ledger views)
 docs/ledgers.yaml

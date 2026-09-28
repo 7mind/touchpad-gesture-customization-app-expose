@@ -81,6 +81,7 @@ export type ApplicationGroupedOverviewDependencies<TPreview, TWindow> = {
     resolveFallbackSource(window: TWindow): LayoutRectangle;
     isApplicationOverviewActive(): boolean;
     getGroupHeaderHeight(): number;
+    getGroupHeaderPosition(): 'top' | 'bottom';
     updateGroupChrome(
         layout: GroupedWorkspaceLayout<TPreview>,
         groups: ApplicationGroupLayout<TPreview>[]
@@ -277,6 +278,8 @@ export class ApplicationGroupedOverviewExtension<
                     options.windowLayout === 'spiral'
                         ? dependencies.getGroupHeaderHeight()
                         : 0;
+                options.groupHeaderPosition =
+                    dependencies.getGroupHeaderPosition();
                 if (options.windowLayout === 'spread') restoreStacking(this);
                 const windows: GroupedOverviewWindow<TPreview>[] =
                     this._sortedWindows.map(preview => {

@@ -68,6 +68,15 @@ function bind_application_grouped_overview_value(
     );
 
     button.set_sensitive(availability.supported);
+    const appearance = builder.get_object<Adw.ComboRow>(
+        'grouped-overview-appearance'
+    );
+    button.bind_property(
+        'active',
+        appearance,
+        'sensitive',
+        GObject.BindingFlags.SYNC_CREATE
+    );
 
     if (availability.supported)
         settings.bind(key, button, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -175,7 +184,9 @@ function bindPrefsSettings(
         builder
     );
     bind_boolean_value('enable-vertical-app-gesture', settings, builder);
+    bind_boolean_value('app-overview-show-icons', settings, builder);
     bind_application_grouped_overview_value(settings, builder, shellVersion);
+    bind_combo_box('grouped-overview-appearance', settings, builder);
 
     bind_boolean_value('allow-minimize-window', settings, builder);
     bind_boolean_value('allow-fullscreen-window', settings, builder);

@@ -64,6 +64,32 @@ The local harness is `debug/20260923-120000-headless-gnome.sh`, with its matchin
 probe. These ignored scripts pin this machine's Nix paths and are not portable CI
 entry points.
 
+## 2026-09-28 presentation corrections
+
+Before correction, the headless reproduction reported
+`PRESENTATION_REPRO: {"unchanged":false,"icons":5}`: hovering the back preview
+changed paint order and all five previews retained individual icons. After
+correction it reports `{"unchanged":true,"icons":0}`. The final run exited with
+status 0; artifacts are in `/tmp/grouped-overview-runtime.ybqG11/`.
+
+- [x] Hover highlights previews without changing paint order or enlarging them; the outline and unchanged foreground windows were also inspected in `hovered-stack.png`.
+- [x] Header mode hides all per-window icons; icon mode renders exactly one icon below each stack and no application name, inspected in `stack-icons.png`.
+- [x] App Exposé hides per-window icons by default, its independent toggle enables them, and suppression works with grouping disabled. Returning to stock Overview restores icons.
+- [x] The shared preview presentation contract runs with in-memory previews and real GNOME previews for both App Exposé icon settings, covering hover, restoration, and idempotent teardown. These private preview-adapter checks are Behavioral–Active–Whitebox, with Group and Good-Communication isolation respectively.
+- [x] The shared group decoration contract covers both header and icon modes, with real actors at 1× and 2× theme scale.
+- [x] Real GTK preference controls load, default to header mode and App Exposé icons off, and write their settings. The appearance combo is insensitive when grouping is disabled or the supplied Shell version is 48/49. These preference-version checks do not claim compositor testing on 48/49.
+
+Local reproduction command after `npm test`:
+
+```sh
+GROUPED_TEST_PRESENTATION=1 GROUPED_TEST_EXPECT_LABELS=1 GROUPED_TEST_SECOND_MONITOR=1 \
+  bash debug/20260923-120000-headless-gnome.sh "$PWD"
+```
+
+The ignored `debug/20260928-203300-preferences-probe.js` is invoked by that local
+harness to verify the GTK controls. Physical input and remaining manual checks
+below are still follow-up QA, not inferred passes from headless automation.
+
 ## Requires a live GNOME Shell session
 
 Run one launcher at a time from a terminal inside the graphical login session:
@@ -110,7 +136,9 @@ Each isolated profile selects _App overview on down_. Focus one of the two termi
 - [ ] While Overview is visible, open, close, resize, minimize, and unminimize windows; affected groups recompute.
 - [ ] Move a window between workspaces and drag a preview between workspace thumbnails.
 - [ ] Traverse with the keyboard; focus remains usable and visits each application's windows contiguously.
-- [ ] The spiral paint order follows its window sequence; hover and keyboard focus raise the selected preview, and leaving it restores the stack.
+- [ ] The spiral paint order follows its window sequence; hover and keyboard focus highlight the selected preview without raising or enlarging it, and leaving removes the highlight.
+- [ ] Both grouped appearance choices suppress per-window icons: header mode shows an icon/name above each stack, icon mode shows just one icon below it.
+- [ ] App Exposé hides per-window icons by default; its independent option enables them with grouping either on or off.
 - [ ] Closing, dragging, and compositor restacking do not scramble the spiral's paint order.
 - [ ] Select a window, use its close button, and drag it; standard `WindowPreview` interactions remain functional.
 - [ ] Confirm app-grid transitions, search entry, per-window icons, titles, and overlays remain functional.

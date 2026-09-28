@@ -5,6 +5,7 @@ import {SearchController} from 'resource:///org/gnome/shell/ui/searchController.
 import {Workspace} from 'resource:///org/gnome/shell/ui/workspace.js';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 import {shouldShowInApplicationOverview} from './appOverviewWindowFilter.js';
+import type {OverviewPreviewIcons} from './overviewPreviewIcons.js';
 import {
     getOverviewWorkspaces,
     invalidateWorkspaceLayout,
@@ -22,8 +23,10 @@ export class ApplicationWindowOverview {
     private _searchEntryOpacity = 255;
     private _searchEntryReactive = true;
     readonly supported: boolean;
+    private readonly _icons: OverviewPreviewIcons;
 
-    constructor() {
+    constructor(icons: OverviewPreviewIcons) {
+        this._icons = icons;
         this.supported =
             !Main.overview.isDummy &&
             typeof Workspace.prototype._isOverviewWindow === 'function' &&
@@ -46,6 +49,7 @@ export class ApplicationWindowOverview {
             return false;
         }
 
+        this._icons.setApplicationOverview(true);
         this._patchWindowFiltering();
         this._disableSearch();
         this._addApplicationWorkspaceWindows();
@@ -98,6 +102,7 @@ export class ApplicationWindowOverview {
 
         this._app = null;
         this._windows = [];
+        this._icons.setApplicationOverview(false);
         this._invalidateLayouts();
     }
 

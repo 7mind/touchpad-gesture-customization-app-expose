@@ -7,6 +7,10 @@
     <value value='3' nick='CLOSE_DOCUMENT' />
     <value value='4' nick='SHOW_NOTIFICATION_LIST' />
   </enum>
+  <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.grouped-overview-appearance'>
+    <value value='0' nick='APPLICATION_HEADER' />
+    <value value='1' nick='APPLICATION_ICON' />
+  </enum>
   <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.overview-navigation-states'>
     <value value='0' nick='CYCLIC' />
     <value value='1' nick='GNOME' />
@@ -89,6 +93,14 @@
     <key name='group-overview-by-application' type='b'>
       <default>false</default>
       <description>Group normal Overview windows into application regions</description>
+    </key>
+    <key name='app-overview-show-icons' type='b'>
+      <default>false</default>
+      <description>Show an application icon on each window in App Exposé</description>
+    </key>
+    <key name='grouped-overview-appearance' enum='org.gnome.shell.extensions.touchpad-gesture-customization.grouped-overview-appearance'>
+      <default>'APPLICATION_HEADER'</default>
+      <description>Show an application header above each group or one application icon below its stack</description>
     </key>
     <key name="pinch-3-finger-gesture" enum="org.gnome.shell.extensions.touchpad-gesture-customization.pinch-gestures">
       <default>'CLOSE_DOCUMENT'</default>

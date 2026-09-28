@@ -3,7 +3,12 @@ function check(condition, message) {
 }
 
 export async function runAppGroupChromeContract(createHarness) {
-    const harness = createHarness();
+    for (const appearance of [0, 1])
+        await runAppearanceContract(createHarness, appearance);
+}
+
+async function runAppearanceContract(createHarness, appearance) {
+    const harness = createHarness(appearance);
     const {controller, groups} = harness;
     const picker = {
         overviewProgress: 1,
@@ -25,8 +30,8 @@ export async function runAppGroupChromeContract(createHarness) {
                 'headers must not capture input'
             );
             check(
-                label.hasIcon && label.hasName,
-                'headers need an application icon and name'
+                label.hasIcon && label.hasName === (appearance === 0),
+                'header mode needs an icon/name; icon mode must have only an icon'
             );
             check(
                 label.height === groups[0].header.height,

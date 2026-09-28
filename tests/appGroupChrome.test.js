@@ -1,14 +1,19 @@
 import {AppGroupChromeController} from '../build/src/appGroupChromeController.js';
 import {runAppGroupChromeContract} from './appGroupChrome.contract.js';
 
-await runAppGroupChromeContract(() => {
+await runAppGroupChromeContract(appearance => {
     const labels = new Map();
     let opacity = 0;
     const groups = ['Editor', 'Browser'].map((name, index) => ({
         key: name,
         items: [{name, icon: `${name}.png`}],
         region: {x: index * 600, y: 0, width: 600, height: 500},
-        header: {x: index * 600, y: 0, width: 600, height: 36},
+        header: {
+            x: index * 600,
+            y: 0,
+            width: 600,
+            height: appearance === 0 ? 36 : 64,
+        },
         weight: 1,
     }));
     const controller = new AppGroupChromeController(
@@ -20,7 +25,7 @@ await runAppGroupChromeContract(() => {
                     x: 0,
                     width: 0,
                     height: 0,
-                    iconHeight: 24,
+                    iconHeight: appearance === 0 ? 24 : 64,
                     reactive: false,
                     canFocus: false,
                     hasIcon: false,
@@ -31,7 +36,9 @@ await runAppGroupChromeContract(() => {
                 return {
                     update(current) {
                         record.hasIcon = current.items[0].icon.length > 0;
-                        record.hasName = current.items[0].name.length > 0;
+                        record.hasName =
+                            appearance === 0 &&
+                            current.items[0].name.length > 0;
                     },
                     setRectangle(rectangle) {
                         record.x = rectangle.x;

@@ -4,7 +4,7 @@
 **Primary Shell target:** GNOME Shell 50.x  
 **Document status:** implementation design / developer handoff  
 **Prepared:** 2026-08-25 (Europe/Dublin)
-**Revised:** 2026-09-28 — manual acceptance recorded as follow-up QA by user decision.
+**Revised:** 2026-09-28 — fixed-order highlighting, selectable group decoration, and optional App Exposé icons; manual acceptance remains follow-up QA.
 
 ## Baseline revisions
 
@@ -89,8 +89,11 @@ Preserve standard `WindowPreview` actors and interactions as much as possible.
 The structural milestone landed in `97cb0487e94ce541fd9a7a680587f20d7be09287`.
 The next required presentation uses overlapping clockwise stacks inside each
 application region, followed by non-reactive application icon/name chrome.
-Hover spreading, clickable labels, cards, group highlights, and duplicate-icon
-suppression are excluded from this revision by the 2026-09-23 scope decision.
+Hover spreading, clickable labels, cards and group-level highlights remain
+excluded. The 2026-09-28 correction adds per-window highlighting without raising,
+suppresses duplicate per-window icons in grouped Overview, and lets users choose
+an application header or one icon beneath the stack. App Exposé has an independent
+per-window icon option, off by default.
 
 Implementation status: phases 0–2 and the required phase 4–5 code are present.
 Clockwise exposure-aware stacking is committed as `0675d2a`; application headers
@@ -592,8 +595,9 @@ scale and center the complete stack inside its region. Previews remain upright;
 the spiral concerns their positions, not image rotation.
 
 The slot sequence also defines the back-to-front stacking order. Synchronize
-GNOME's preview stacking with that sequence without reparenting actors, preserve
-its temporary hover/keyboard-focus raise, and restore desktop stacking on exit
+GNOME's preview stacking with that sequence without reparenting actors. Highlight
+the hovered or keyboard-focused preview in place, without raising or enlarging it
+over smaller foreground windows, and restore desktop stacking on exit
 or disable. Merely changing slot order does not change Clutter's paint order.
 
 ### 8.8 Step 6: flatten to GNOME slots
@@ -679,7 +683,9 @@ This is useful, but it should not block the layout MVP.
 
 ## 10. Application chrome outside the slot list
 
-Show one application icon/name above each stack. Headers remain non-reactive and
+Show either one application icon/name above each stack (the default) or a single
+application icon beneath the stack, selected by the `grouped-overview-appearance`
+setting. Both modes suppress individual preview icons. Decorations remain non-reactive and
 cannot take keyboard focus. Cards and clickable labels are outside the agreed scope.
 
 However, do **not** put application chrome actors into `WorkspaceLayout._windowSlots`.
@@ -716,7 +722,9 @@ Use a `WeakMap<WorkspaceLayout, AppGroupChromeController>` or equivalent to asso
 The chrome controller receives group rectangles from the layout computation and positions its overlay actors accordingly.
 
 Reserve a 36-logical-pixel header row plus group padding before fitting the stack.
-Return its rectangle alongside the application region. App Exposé reserves no
+Icon mode instead reserves 64 logical pixels plus padding below the previews and
+centers one icon under their combined bounds. Return the decoration rectangle
+alongside the application region. App Exposé reserves no
 header row. If the area cannot fit a header and preview, use the existing explicit
 stock-layout fallback and clear the stale header.
 
@@ -841,7 +849,10 @@ Leave each `WindowPreview` under GNOME's normal `_container`. Existing drag sign
 
 ### Close buttons and window overlays
 
-Keep existing per-window overlay/chrome for the MVP. Hiding/replacing duplicate app icons is polish and may change spacing calculations; postpone it until group geometry is stable.
+Keep stock titles and close controls. Hide per-window icons in both grouped
+presentation modes. The independent `app-overview-show-icons` boolean defaults
+to false and controls per-window icons in App Exposé even when grouping is off.
+Restore stock icon visibility outside either mode and on extension disable.
 
 ### Workspace thumbnails
 
@@ -1074,7 +1085,9 @@ Create `GroupedOverviewExtension`:
 4. restore on destroy;
 5. wire as a separate `ISubExtension` in `extension.ts`.
 
-At this point, keep standard per-window icons/titles. The success criterion is purely geometric grouping.
+At this initial milestone, keep standard per-window icons/titles. The later
+presentation correction suppresses duplicate icons while retaining titles and
+close controls.
 
 ### Phase 3 - validate every Overview entry path
 
@@ -1111,7 +1124,6 @@ The user excluded this phase from the current implementation. Future work may co
 - click app label/icon -> invoke `ApplicationWindowOverview.show(app)`;
 - subtle group background/card;
 - group-level highlight during keyboard navigation;
-- hide redundant per-window app icons while preserving titles/close controls;
 - further tuning of macOS-like group weighting and stack spacing.
 
 ---
@@ -1199,7 +1211,9 @@ The feature is done when all of the following are true:
 - [ ] All top-level windows belonging to one `Shell.App` stay inside one coherent group region.
 - [ ] Groups are laid out independently of the windows inside other groups.
 - [ ] Every stacked window retains at least 10% exposed area, accounting for all foreground previews.
-- [ ] Each application has one non-reactive icon/name header, with no header overlap into preview allocations.
+- [ ] Each application has either one non-reactive icon/name header above its stack or one icon below it, with no duplicate per-window icons.
+- [ ] Hover and keyboard focus highlight a preview without changing spiral paint order or enlarging it over neighbors.
+- [ ] App Exposé per-window icons follow their independent setting, off by default, with grouping enabled or disabled.
 - [ ] Headers disappear in App Exposé, search, and app grid, including secondary monitors.
 - [ ] Header actors are reused on relayout and removed when groups/workspaces disappear or the extension is disabled.
 - [ ] A one-window app uses its group space efficiently.

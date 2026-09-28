@@ -14,6 +14,7 @@ import type {
     LayoutRectangle,
 } from './groupedOverviewLayout.js';
 import type {GroupedOverviewPreview} from './groupedOverview.js';
+import {GroupedOverviewAppearance} from '../common/groupedOverviewAppearance.js';
 
 type AppGroupPreview = GroupedOverviewPreview<Meta.Window>;
 
@@ -28,6 +29,7 @@ export type AppGroupChromeLayout = {
 export type AppGroupSearchController = St.Widget & {searchActive: boolean};
 
 export const APP_GROUP_HEADER_HEIGHT = 36;
+export const APP_GROUP_STACK_ICON_SIZE = 64;
 const APP_GROUP_ICON_SIZE = 24;
 
 export class ApplicationLabel implements AppGroupLabel<AppGroupPreview> {
@@ -37,9 +39,15 @@ export class ApplicationLabel implements AppGroupLabel<AppGroupPreview> {
     private _window: Meta.Window | null = null;
     private _app: Shell.App | null = null;
     private _icon: Clutter.Actor | null = null;
+    private readonly _appearance: GroupedOverviewAppearance;
 
-    constructor(parent: Clutter.Actor, tracker: Shell.WindowTracker) {
+    constructor(
+        parent: Clutter.Actor,
+        tracker: Shell.WindowTracker,
+        appearance: GroupedOverviewAppearance
+    ) {
         this._tracker = tracker;
+        this._appearance = appearance;
         this._actor = new St.BoxLayout({
             style_class: 'gie-app-group-label',
             reactive: false,
@@ -54,6 +62,8 @@ export class ApplicationLabel implements AppGroupLabel<AppGroupPreview> {
         this._name.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._name.clutter_text.single_line_mode = true;
         this._actor.add_child(this._name);
+        this._name.visible =
+            appearance === GroupedOverviewAppearance.APPLICATION_HEADER;
         parent.add_child(this._actor);
     }
 
@@ -77,9 +87,9 @@ export class ApplicationLabel implements AppGroupLabel<AppGroupPreview> {
                     app === null
                         ? new St.Icon({
                               icon_name: 'application-x-executable-symbolic',
-                              icon_size: APP_GROUP_ICON_SIZE,
+                              icon_size: this._iconSize,
                           })
-                        : app.create_icon_texture(APP_GROUP_ICON_SIZE);
+                        : app.create_icon_texture(this._iconSize);
                 this._icon.reactive = false;
                 this._icon.y_align = Clutter.ActorAlign.CENTER;
                 this._actor.insert_child_at_index(this._icon, 0);
@@ -112,6 +122,12 @@ export class ApplicationLabel implements AppGroupLabel<AppGroupPreview> {
         this._actor.set_clip(0, 0, width, rectangle.height);
     }
 
+    private get _iconSize(): number {
+        return this._appearance === GroupedOverviewAppearance.APPLICATION_HEADER
+            ? APP_GROUP_ICON_SIZE
+            : APP_GROUP_STACK_ICON_SIZE;
+    }
+
     destroy(): void {
         this._actor.destroy();
     }
@@ -132,6 +148,7 @@ export class WorkspaceAppGroupChrome {
         layout: AppGroupChromeLayout,
         search: AppGroupSearchController,
         tracker: Shell.WindowTracker,
+        appearance: GroupedOverviewAppearance,
         onDestroy: () => void
     ) {
         const workspace = layout._container.get_parent();
@@ -159,7 +176,8 @@ export class WorkspaceAppGroupChrome {
         workspace.add_child(this._overlay);
         this._controller = new AppGroupChromeController(
             {
-                createLabel: () => new ApplicationLabel(this._overlay, tracker),
+                createLabel: () =>
+                    new ApplicationLabel(this._overlay, tracker, appearance),
                 setOpacity: opacity => {
                     this._overlay.opacity = opacity;
                 },
