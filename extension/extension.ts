@@ -24,6 +24,13 @@ import {ShowNotificationListExtension} from './src/pinchGestures/showNotificatio
 import {VolumeControlGestureExtension} from './src/volumeControl.js';
 import {BrightnessControlGestureExtension} from './src/brightnessControl.js';
 import {createApplicationGroupedOverviewExtension} from './src/groupedOverviewIntegration.js';
+import {ApplicationWindowOverview} from './src/appSpread.js';
+import {WindowPreview} from 'resource:///org/gnome/shell/ui/windowPreview.js';
+import {getOverviewWorkspaces} from './src/overviewInternals.js';
+import {
+    OverviewPreviewIcons,
+    type IconOverviewPreview,
+} from './src/overviewPreviewIcons.js';
 
 export default class TouchpadGestureCustomization extends Extension {
     private _extensions: ISubExtension[];
@@ -99,8 +106,32 @@ export default class TouchpadGestureCustomization extends Extension {
                 this.settings.get_boolean('group-overview-by-application')
             );
 
+        const icons = new OverviewPreviewIcons(
+            WindowPreview.prototype as unknown as IconOverviewPreview,
+            () =>
+                getOverviewWorkspaces().flatMap(
+                    workspace =>
+                        (
+                            workspace._container.layout_manager as unknown as {
+                                _sortedWindows: IconOverviewPreview[];
+                            }
+                        )._sortedWindows
+                ),
+            this.settings.get_boolean('app-overview-show-icons'),
+            message =>
+                console.warn(`[touchpad-gesture-customization] ${message}`)
+        );
+        this._extensions.push(icons);
+        const applicationOverview = new ApplicationWindowOverview(icons);
+
         if (groupedOverviewAvailability.enabled)
-            this._extensions.push(createApplicationGroupedOverviewExtension());
+            this._extensions.push(
+                createApplicationGroupedOverviewExtension(
+                    applicationOverview,
+                    this.settings.get_enum('grouped-overview-appearance'),
+                    icons
+                )
+            );
 
         /**
          * Overview navigation
@@ -118,7 +149,8 @@ export default class TouchpadGestureCustomization extends Extension {
         const overviewRoundTripGestureExtension =
             new OverviewRoundTripGestureExtension(
                 this.settings.get_enum('overview-navigation-states'),
-                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1'
+                GLib.getenv('TOUCHPAD_GESTURE_NESTED_SCROLL_TEST') === '1',
+                applicationOverview
             );
 
         // By default, disable overview navigation when user doesn't assign any gestures

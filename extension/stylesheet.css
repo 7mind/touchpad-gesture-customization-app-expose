@@ -42,3 +42,14 @@
 .gie-tile-window-preview {
     border-radius: 12px;
 }
+
+.gie-app-group-label {
+    spacing: 6px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.gie-grouped-window-highlight {
+    box-shadow: 0 0 0 3px #99c1f1;
+}

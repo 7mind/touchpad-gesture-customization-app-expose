@@ -1,5 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import type {GroupedOverviewAppearance} from './groupedOverviewAppearance.js';
 
 export enum PinchGestureType {
     NONE = 0,
@@ -49,6 +50,7 @@ export type BooleanSettingsKeys =
     | 'enable-forward-back-gesture'
     | 'default-overview-gesture-direction'
     | 'enable-vertical-app-gesture'
+    | 'app-overview-show-icons'
     | 'group-overview-by-application';
 
 export type IntegerSettingsKeys = 'alttab-delay' | 'hold-swipe-delay-duration';
@@ -67,6 +69,7 @@ export type EnumSettingsKeys =
     | 'pinch-3-finger-gesture'
     | 'pinch-4-finger-gesture'
     | 'overview-navigation-states'
+    | 'grouped-overview-appearance'
     | 'workspace-switching-states';
 
 export type MiscSettingsKeys = 'forward-back-application-keyboard-shortcuts';
@@ -105,6 +108,7 @@ type SettingsEnumFunctions = Enum_Functions<
         PinchGestureType
     > &
     Enum_Functions<'overview-navigation-states', OverviewNavigationState> &
+    Enum_Functions<'grouped-overview-appearance', GroupedOverviewAppearance> &
     Enum_Functions<'workspace-switching-states', WorkspaceSwitchingState>;
 
 type Misc_Functions<K extends MiscSettingsKeys, T extends string> = {

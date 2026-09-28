@@ -33,7 +33,7 @@ declare module 'resource:///org/gnome/shell/ui/overviewControls.js' {
         _appDisplay: {
             _swipeTracker: SwipeTracker;
         };
-        _searchController: {
+        _searchController: St.Widget & {
             searchActive: boolean;
         };
     }

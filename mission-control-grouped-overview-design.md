@@ -4,6 +4,7 @@
 **Primary Shell target:** GNOME Shell 50.x  
 **Document status:** implementation design / developer handoff  
 **Prepared:** 2026-08-25 (Europe/Dublin)
+**Revised:** 2026-09-28 — fixed-order highlighting, selectable group decoration, and optional App Exposé icons; manual acceptance remains follow-up QA.
 
 ## Baseline revisions
 
@@ -11,7 +12,7 @@ This document is grounded in these concrete revisions rather than in generic GNO
 
 - Extension fork: [`7mind/touchpad-gesture-customization-app-expose`](https://github.com/7mind/touchpad-gesture-customization-app-expose), current `main` at [`0876e36`](https://github.com/7mind/touchpad-gesture-customization-app-expose/commit/0876e36) from **2026-08-10**. GitHub currently has **no releases** for this fork.
 - GNOME Shell: design checked against the [`50.4`](https://github.com/GNOME/gnome-shell/tree/50.4) source tag, released **2026-08-04** (`dcda659`). The GNOME Shell repository's current `main` had commit `1b73dac` on **2026-08-25** when this document was prepared.
-- The extension currently declares GNOME Shell **48, 49, and 50** support in [`metadata.json`](https://github.com/7mind/touchpad-gesture-customization-app-expose/blob/0876e36/metadata.json#L6-L10). The first implementation of this feature should be made correct on GNOME 50, then compatibility-probed/backported to 49/48 using the repository's existing runtime feature-detection pattern.
+- The extension declares GNOME Shell **48, 49, and 50** support in [`metadata.json`](https://github.com/7mind/touchpad-gesture-customization-app-expose/blob/0876e36/metadata.json#L6-L10). Application grouping is deliberately limited to **GNOME 50 and later**, with runtime feature detection within that supported range. GNOME 48/49 retain the existing extension behavior without grouping. Backporting is outside this revision's scope, confirmed on 2026-09-23.
 
 ---
 
@@ -72,7 +73,6 @@ Do not make the first patch depend on all Mission Control polish landing at once
 
 The first useful version does **not** need:
 
-- overlapping/stacked windows inside an app group;
 - hover-to-spread animation;
 - clickable application containers;
 - a custom background card around every group;
@@ -85,6 +85,25 @@ The first milestone should prove the structural behavior:
 > windows from the same application occupy one coherent application region, and those application regions are what the outer Overview layout optimizes.
 
 Preserve standard `WindowPreview` actors and interactions as much as possible.
+
+The structural milestone landed in `97cb0487e94ce541fd9a7a680587f20d7be09287`.
+The next required presentation uses overlapping clockwise stacks inside each
+application region, followed by non-reactive application icon/name chrome.
+Hover spreading, clickable labels, cards and group-level highlights remain
+excluded. The 2026-09-28 correction adds per-window highlighting without raising,
+suppresses duplicate per-window icons in grouped Overview, and lets users choose
+an application header or one icon beneath the stack. App Exposé has an independent
+per-window icon option, off by default.
+
+Implementation status: phases 0–2 and the required phase 4–5 code are present.
+Clockwise exposure-aware stacking is committed as `0675d2a`; application headers
+are committed as `ca5b659`. Pure tests and real
+GNOME 50.4 headless checks cover geometry, headers, App Exposé, multi-monitor
+policies and disable/re-enable. Physical entry paths, gesture reversal, dragging,
+and application identity acceptance remain unverified follow-up QA, not claimed
+passes. On 2026-09-28 the user confirmed that these checks do not gate completion
+of this implementation;
+see [the QA checklist](docs/drafts/20260825-2059-mission-control-grouped-overview-qa.md).
 
 ---
 
@@ -271,7 +290,8 @@ extension/src/
   groupedOverview.ts            lifecycle + GNOME monkeypatch integration
   groupedOverviewLayout.ts      pure-ish hierarchical layout algorithm
   overviewInternals.ts          shared enumeration/invalidation helpers
-  appGroupChrome.ts             optional phase-2 application labels/cards
+  appGroupChrome.ts             application icon/name overlay and Shell lifecycle
+  appGroupChromeController.ts   actor-independent header lifecycle/state policy
 ```
 
 Existing files remain responsible for their current jobs:
@@ -476,14 +496,15 @@ class SpatialRowLayout<T extends LayoutItem> {
 }
 ```
 
-Then use the same primitive twice:
+Use the spatial primitive for outer application regions and the explicit
+App Exposé spread presentation. Normal Overview uses a spiral inside each region:
 
 ```text
 SpatialRowLayout<ApplicationGroup>
     -> application rectangles
 
-SpatialRowLayout<WindowPreviewItem>
-    -> window rectangles inside each application rectangle
+ClockwiseSpiral<WindowPreviewItem>
+    -> overlapping window rectangles inside each application rectangle
 ```
 
 This preserves the useful stock-GNOME idea of spatial ordering while giving the extension a hierarchy.
@@ -552,13 +573,32 @@ A modified version of GNOME's row search is a good starting point: try candidate
 
 ### 8.7 Step 5: inner window layout
 
-For each app rectangle:
+For each normal Overview app rectangle:
 
 1. subtract app-group padding/chrome reservation;
-2. lay out only that group's member windows inside the remaining rectangle;
+2. stack only that group's member windows in a clockwise expanding spiral;
 3. preserve window aspect ratio;
-4. preserve their relative spatial order when practical;
+4. preserve stable window sequence within the stack;
 5. return ordinary `WindowPreview` target allocations.
+
+The first window is centered. Successive centers wind clockwise in screen
+coordinates, beginning above that center, with a 60-degree angular increment
+and a radius proportional to the square root of the index. Bound the maximum
+radius to 22% of the smallest member dimension so all centers remain over the
+first preview, forming a connected overlapping stack. Reduce front thumbnails
+as necessary so **every window retains at least 10% exposed area**, accounting
+for the union of all windows in front of it. Preserve each thumbnail's aspect
+ratio; relative thumbnail sizes may change. A decreasing visibility reserve
+during construction leaves space for each subsequent window. Compute this
+intrinsic stack once when group membership/geometry changes, then uniformly
+scale and center the complete stack inside its region. Previews remain upright;
+the spiral concerns their positions, not image rotation.
+
+The slot sequence also defines the back-to-front stacking order. Synchronize
+GNOME's preview stacking with that sequence without reparenting actors. Highlight
+the hovered or keyboard-focused preview in place, without raising or enlarging it
+over smaller foreground windows, and restore desktop stacking on exit
+or disable. Merely changing slot order does not change Clutter's paint order.
 
 ### 8.8 Step 6: flatten to GNOME slots
 
@@ -576,7 +616,10 @@ That matters because stock `WorkspaceLayout.getFocusChain()` returns the fifth e
 
 If only one app group is present, the **outer layout should effectively disappear**: give the app the whole available window-picker area and run only the inner window layout.
 
-This is particularly important because the existing swipe-down App Expose filter leaves exactly one application's windows visible. The same grouped layout engine can therefore serve App Expose without making the current app needlessly small inside a one-cell outer grid.
+Normal Overview with one application still uses a clockwise stack. Explicit
+swipe-down App Exposé instead spreads that application's windows across the full
+area without overlap. Use the App Exposé controller's active state to select the
+inner presentation; the number of application groups cannot identify this mode.
 
 ### 8.10 One-window application special case
 
@@ -610,8 +653,8 @@ normal Overview
 
 swipe down / App Expose filter
   -> one application's previews remain
-  -> grouped strategy sees exactly one group
-  -> single-group path fills the available area
+  -> grouped strategy receives explicit App Exposé state
+  -> single-group spread path fills the available area without overlap
 
 restoreDefaultOverview()
   -> all normal previews restored
@@ -620,13 +663,17 @@ restoreDefaultOverview()
 
 No direction-specific grouping state should be required in `overviewRoundTrip.ts`.
 
+Share the existing App Exposé controller between gesture navigation and the layout
+integration. Invalidate layouts when its active state changes, even if filtering
+does not change membership (for example, only one application was present).
+
 ### Existing relayout workaround remains relevant
 
 `ApplicationWindowOverview` currently unfreezes workspace layouts after installing/removing filtered previews because GNOME deliberately freezes layout for a period after removals to avoid windows moving under a mouse pointer. This remains necessary for touchpad App Expose transitions.
 
 The grouped layout extension should **reuse** the same shared invalidation/unfreeze utility; it should not remove that workaround.
 
-### Optional later integration
+### Optional later integration (outside this revision)
 
 Once application group chrome exists, clicking an application label/icon could call the same `ApplicationWindowOverview.show(app)` behavior while already inside normal Overview. That would produce a Mission Control-like "drill into this application" interaction and reuse code that already exists.
 
@@ -634,9 +681,12 @@ This is useful, but it should not block the layout MVP.
 
 ---
 
-## 10. Application chrome: phase 2, not part of the slot list
+## 10. Application chrome outside the slot list
 
-To make "app is the main Overview element" fully legible, eventually add one label/icon (and optionally a subtle card/background) per application group.
+Show either one application icon/name above each stack (the default) or a single
+application icon beneath the stack, selected by the `grouped-overview-appearance`
+setting. Both modes suppress individual preview icons. Decorations remain non-reactive and
+cannot take keyboard focus. Cards and clickable labels are outside the agreed scope.
 
 However, do **not** put application chrome actors into `WorkspaceLayout._windowSlots`.
 
@@ -661,7 +711,7 @@ and add an extension-owned sibling overlay:
 Workspace
   +-- background
   +-- _container                stock WindowPreview actors, unchanged
-  +-- appGroupOverlay           extension-owned, non-reactive initially
+  +-- appGroupOverlay           extension-owned, non-reactive
       +-- Firefox label/icon
       +-- IntelliJ label/icon
       +-- Terminal label/icon
@@ -671,16 +721,39 @@ Use a `WeakMap<WorkspaceLayout, AppGroupChromeController>` or equivalent to asso
 
 The chrome controller receives group rectangles from the layout computation and positions its overlay actors accordingly.
 
+Reserve a 36-logical-pixel header row plus group padding before fitting the stack.
+Icon mode instead reserves 64 logical pixels plus padding below the previews and
+centers one icon under their combined bounds. Return the decoration rectangle
+alongside the application region. App Exposé reserves no
+header row. If the area cannot fit a header and preview, use the existing explicit
+stock-layout fallback and clear the stale header.
+
+Coalesce actor creation/update onto the main-loop idle phase: adding a sibling
+during `WorkspaceLayout.vfunc_allocate()` invalidates Clutter's active child
+iterator. Cancel pending work when its container is destroyed or the extension
+is disabled. Reuse headers by application key; also remove departed groups on
+preview removal, since GNOME can freeze layout and remove slots before computing
+new geometry.
+
+Map header coordinates through the window container into its workspace sibling,
+including GNOME's cached-slot scale while layout is frozen. Give the overlay no
+minimum or natural size so labels cannot change workspace allocation. Let
+`St.Icon` apply the theme scale factor itself; only the reserved geometry uses
+physical pixels.
+
 ### Chrome state
 
-At first:
+Required behavior:
 
 - make group chrome non-reactive;
 - show it only around `WINDOW_PICKER` state;
 - fade it with the same Overview state adjustment so it does not appear abruptly during swipe-up;
-- suppress/reduce redundant group chrome for the one-group App Expose state if desired.
+- suppress redundant group chrome in explicit App Exposé mode;
+- consult both the workspace spread adjustment and the global Overview
+  adjustment, since secondary-monitor workspaces can remain spread in app grid;
+- hide headers while search is active.
 
-Only after geometry and transitions are stable should group chrome become clickable/hover-reactive.
+Headers remain non-reactive in this revision.
 
 ---
 
@@ -776,7 +849,10 @@ Leave each `WindowPreview` under GNOME's normal `_container`. Existing drag sign
 
 ### Close buttons and window overlays
 
-Keep existing per-window overlay/chrome for the MVP. Hiding/replacing duplicate app icons is polish and may change spacing calculations; postpone it until group geometry is stable.
+Keep stock titles and close controls. Hide per-window icons in both grouped
+presentation modes. The independent `app-overview-show-icons` boolean defaults
+to false and controls per-window icons in App Exposé even when grouping is off.
+Restore stock icon visibility outside either mode and on extension disable.
 
 ### Workspace thumbnails
 
@@ -896,7 +972,11 @@ If unsupported, log a clear warning and leave the stock Overview intact. A priva
 
 ## 17. Testing strategy
 
-The existing `npm test` currently compiles TypeScript and runs a small pure Node test for `appOverviewWindowFilter` ([`package.json`](https://github.com/7mind/touchpad-gesture-customization-app-expose/blob/0876e36/package.json#L18-L29)). Extend that pattern.
+`npm test` compiles TypeScript and exercises filtering, gesture policy, availability,
+group geometry, patch lifecycle, preview stacking, and application-header behavior.
+The header contract in `tests/appGroupChrome.contract.js` runs against an in-memory
+view and can also run against actual GNOME `ApplicationLabel` actors. The headless
+GNOME acceptance run additionally exercises the production layout/overlay integration.
 
 The layout algorithm should be mostly pure TypeScript so it can be tested without a GNOME session.
 
@@ -919,7 +999,8 @@ Consider making the Node test entry run multiple files instead of hardcoding onl
 
 ### Manual Shell acceptance matrix
 
-Test all of these on GNOME 50 before calling the feature complete:
+Run these on GNOME 50 as follow-up QA. By the 2026-09-28 user decision, unverified
+manual checks remain documented but do not gate completion of this implementation:
 
 #### Entry paths
 
@@ -1004,23 +1085,27 @@ Create `GroupedOverviewExtension`:
 4. restore on destroy;
 5. wire as a separate `ISubExtension` in `extension.ts`.
 
-At this point, keep standard per-window icons/titles. The success criterion is purely geometric grouping.
+At this initial milestone, keep standard per-window icons/titles. The later
+presentation correction suppresses duplicate icons while retaining titles and
+close controls.
 
 ### Phase 3 - validate every Overview entry path
 
-Do not proceed until:
+The acceptance invariant is:
 
 ```text
 swipe up == Super == hot corner == programmatic normal Overview
 ```
 
-in terms of grouping.
+in terms of grouping. Physical entry-path validation is follow-up QA under the
+2026-09-28 user decision, rather than a gate on the later implementation phases.
 
 This phase specifically catches the failure mode where grouping accidentally lives in `OverviewRoundTripGestureExtension` rather than the global layout policy.
 
 ### Phase 4 - integrate/retest App Expose
 
-Make the single-group case produce a good App Expose layout and verify direction reversal.
+Keep App Exposé spread out while normal Overview uses clockwise stacks, and
+verify direction reversal, including when both modes have identical membership.
 
 Ideally no new gesture logic is needed; only geometry tuning should be necessary.
 
@@ -1028,18 +1113,18 @@ Ideally no new gesture logic is needed; only geometry tuning should be necessary
 
 Add one app icon/name per region using an overlay sibling, never by reparenting window previews or inserting non-window actors into `_windowSlots`.
 
-Tie chrome to Overview state adjustment and make it non-reactive initially.
+Tie chrome to Overview state and search, reserve its layout space, and keep it
+non-reactive. Destroy it on workspace destruction and extension disable.
 
 ### Phase 6 - optional Mission Control polish
 
-After the base feature is robust, consider:
+The user excluded this phase from the current implementation. Future work may consider:
 
 - hover a group -> increase spacing between its windows;
 - click app label/icon -> invoke `ApplicationWindowOverview.show(app)`;
 - subtle group background/card;
 - group-level highlight during keyboard navigation;
-- hide redundant per-window app icons while preserving titles/close controls;
-- tuned macOS-like group weighting and overlap.
+- further tuning of macOS-like group weighting and stack spacing.
 
 ---
 
@@ -1099,16 +1184,17 @@ A developer picking this up should aim for the smallest vertical slice that prov
 2. Add a boolean `group-overview-by-application` setting (or temporarily hard-wire it for `APPLICATION_OVERVIEW_ON_DOWN`).
 3. Add `GroupedOverviewExtension` as a separate `ISubExtension` in `extension.ts`.
 4. Patch `WorkspaceLayout.prototype._createBestLayout` globally while enabled.
-5. Implement a simple two-level spatial grid/row layout in pure TypeScript:
+5. Implement hierarchical layout in pure TypeScript:
    - `Shell.WindowTracker.get_window_app(metaWindow)` for keys;
    - outer groups arranged spatially;
-   - inner windows arranged spatially;
+   - inner windows stacked in a clockwise spiral in normal Overview;
+   - explicit App Exposé state selects non-overlapping spatial window placement;
    - one-group fast path;
    - flat group-contiguous slot output.
 6. Leave all existing `WindowPreview` actors and per-window chrome untouched.
 7. Verify that **`Super` is grouped before touching the swipe code**. If `Super` is not grouped, the patch is at the wrong architectural level.
 8. Verify swipe-up now gets the grouped layout automatically.
-9. Verify swipe-down App Expose still filters to one app and the same layout naturally fills the area.
+9. Verify swipe-down App Expose still filters to one app and spreads its windows across the area.
 10. Only then add application-level icon/name chrome.
 
 That gives a clear implementation invariant:
@@ -1124,6 +1210,12 @@ The feature is done when all of the following are true:
 - [ ] Normal Overview treats applications as outer layout units.
 - [ ] All top-level windows belonging to one `Shell.App` stay inside one coherent group region.
 - [ ] Groups are laid out independently of the windows inside other groups.
+- [ ] Every stacked window retains at least 10% exposed area, accounting for all foreground previews.
+- [ ] Each application has either one non-reactive icon/name header above its stack or one icon below it, with no duplicate per-window icons.
+- [ ] Hover and keyboard focus highlight a preview without changing spiral paint order or enlarging it over neighbors.
+- [ ] App Exposé per-window icons follow their independent setting, off by default, with grouping enabled or disabled.
+- [ ] Headers disappear in App Exposé, search, and app grid, including secondary monitors.
+- [ ] Header actors are reused on relayout and removed when groups/workspaces disappear or the extension is disabled.
 - [ ] A one-window app uses its group space efficiently.
 - [ ] A one-app view uses the full window-picker area.
 - [ ] Swipe-up enters grouped Overview.

@@ -12,6 +12,13 @@
         </items>
     </object>
 
+    <object class="GtkStringList" id="grouped_overview_appearance_model">
+        <items>
+            <item translatable="yes">Application header</item>
+            <item translatable="yes">Application icon</item>
+        </items>
+    </object>
+
     <object class="GtkStringList" id="workspace_switching_states_model">
         <items>
             <item translatable="yes">Default</item>
@@ -282,6 +289,17 @@
 
                 <child>
                     <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Show app icons in App overview</property>
+                        <child>
+                            <object class="GtkSwitch" id="app-overview-show-icons">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+
+                <child>
+                    <object class="AdwActionRow">
                         <property name="title" translatable="yes">Group Overview by application</property>
                         <property name="subtitle" translatable="yes">Mission Control-style layout on compatible GNOME Shell versions</property>
                         <child>
@@ -290,6 +308,13 @@
                                 <property name="active">False</property>
                             </object>
                         </child>
+                    </object>
+                </child>
+
+                <child>
+                    <object class="AdwComboRow" id="grouped-overview-appearance">
+                        <property name="title" translatable="yes">Grouped Overview appearance</property>
+                        <property name="model">grouped_overview_appearance_model</property>
                     </object>
                 </child>
 

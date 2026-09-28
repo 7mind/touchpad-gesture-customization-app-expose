@@ -2,6 +2,10 @@
 
 Record the GNOME Shell version, session type, monitor count, and extension commit before testing.
 
+On 2026-09-28 the user accepted the remaining manual checks as follow-up QA,
+not a completion gate for commits `0675d2a` and `ca5b659`. Unchecked items remain
+unverified; this decision does not turn them into passes.
+
 ## Covered by automated tests
 
 Run:
@@ -15,14 +19,76 @@ nix flake check '.?dir=nix/testing'
 - [x] Multiple applications receive distinct coherent regions with sublinear window-count weighting and deterministic spatial placement.
 - [x] Same-application windows are grouped even when spatially separated; unmatched windows receive separate fallback groups.
 - [x] Window slots stay inside their application region and the overall area, preserve aspect ratio, and flatten in group-contiguous order.
+- [x] Normal Overview windows overlap in a deterministic outward clockwise spiral; mixed window sizes and large stacks stay bounded without distorting aspect ratios, and every preview retains at least 10% exposed area against the union of foreground windows.
+- [x] Explicit App Exposé layout spreads windows without overlap and uses the full application region.
 - [x] The owned patch installs and restores cleanly, preserves a later foreign patch, fails closed when unsupported, and falls back to stock slots after invalid input.
 - [x] GNOME Shell 48–49 resolves the grouped Overview as unsupported and disabled regardless of the stored setting; GNOME 50 and later honors the setting.
 - [x] The pinned GNOME 48, 49, and 50 closures expose the required compositor mode, package the extension and compiled schema, and build ShellCheck-clean isolated launchers.
 - [x] The launchers remove host display variables from private D-Bus activation, wait for a nested Wayland output, and direct extension preferences and test applications to that display.
 - [x] The nested scroll adapter normalizes smooth and discrete vertical events, ignores horizontal events, captures handled scrolls before stock workspace navigation, and translates begin, update, reversal, explicit end, timeout end, and destruction without duplicate gesture transitions.
 - [x] Transient zero-sized previews and Overview areas too small for configured gaps retain stock layout for that allocation pass without an error; an allocated window frame is used when available, while malformed negative geometry still reports the invariant failure.
+- [x] Application headers reserve space above previews, clear on stock fallback and empty layouts, and reserve no space in App Exposé.
+- [x] The shared application-header contract verifies icon/name presentation, non-reactivity, actor reuse, geometry updates, width recovery after clipping, visibility transitions, group removal, and idempotent cleanup.
 
 The Node suite covers the pure layout, lifecycle, and nested scroll controllers. The Nix checks cover the versioned launcher and package contracts. Neither can load GNOME Shell's `gi://` and `resource:///` production modules and exercise interactive rendering, so the checks below are the production-adapter leg.
+
+## Recorded headless GNOME 50.4 verification
+
+The 2026-09-27 run used a private Wayland compositor with software rendering,
+1600×900 and 1200×900 virtual monitors, four Foot windows and Calculator.
+The spiral implementation was based on `0675d2a`; application headers were tested
+from the working tree before their commit. Artifacts are local, not repository
+fixtures: `/tmp/grouped-overview-runtime.mC4dUI/` contains screenshots, snapshots,
+the Shell log and `result.json`.
+
+- [x] Programmatic normal Overview produces overlapping clockwise stacks in the actual preview paint order. Independently measured exposed fractions were 10.00%, 16.38%, 56.71%, and 100% for the four-window stack.
+- [x] Two applications produce two non-reactive icon/name headers above their previews.
+- [x] App grid and search hide headers; returning restores them.
+- [x] Explicit App Exposé contains only the four Foot windows, spread without overlap or group headers; restoring normal Overview restores both application groups.
+- [x] Both values of `workspaces-only-on-primary` retain monitor-local groups. Moving a window to the secondary monitor and back updates headers without leaving an empty group's label behind.
+- [x] Disable while Overview is visible restores stock slots and removes overlays; re-enable does not duplicate headers.
+- [x] The same `tests/appGroupChrome.contract.js` suite passes against production `ApplicationLabel` actors at theme scale factors 1 and 2, including icon fit and natural-width recovery after a narrow allocation.
+
+The shared contract is Behavioral–Active–Blackbox–Group with the in-memory view,
+and Behavioral–Active–Blackbox–Good-Communication with real actors. The separate
+Shell acceptance probe deliberately uses Whitebox–Good-Communication checks for
+private slot/paint-order contracts. It does not establish raw touchpad recognition,
+physical input routing, all manual interaction paths, or every application identity
+edge case listed below. Those boxes remain unchecked.
+
+This run reached `RUNTIME_RESULT: all assertions passed` and exited with status 0.
+An earlier run passed assertions but failed shutdown after the unused performance
+helper's 30-second idle timeout. The harness now uses Shell's
+`disableHelperAutoExit()` API rather than asking the expired helper to exit.
+The local harness is `debug/20260923-120000-headless-gnome.sh`, with its matching
+probe. These ignored scripts pin this machine's Nix paths and are not portable CI
+entry points.
+
+## 2026-09-28 presentation corrections
+
+Before correction, the headless reproduction reported
+`PRESENTATION_REPRO: {"unchanged":false,"icons":5}`: hovering the back preview
+changed paint order and all five previews retained individual icons. After
+correction it reports `{"unchanged":true,"icons":0}`. The final run exited with
+status 0; artifacts are in `/tmp/grouped-overview-runtime.ybqG11/`.
+
+- [x] Hover highlights previews without changing paint order or enlarging them; the outline and unchanged foreground windows were also inspected in `hovered-stack.png`.
+- [x] Header mode hides all per-window icons; icon mode renders exactly one icon below each stack and no application name, inspected in `stack-icons.png`.
+- [x] App Exposé hides per-window icons by default, its independent toggle enables them, and suppression works with grouping disabled. Returning to stock Overview restores icons.
+- [x] The shared preview presentation contract runs with in-memory previews and real GNOME previews for both App Exposé icon settings, covering hover, restoration, and idempotent teardown. These private preview-adapter checks are Behavioral–Active–Whitebox, with Group and Good-Communication isolation respectively.
+- [x] The shared group decoration contract covers both header and icon modes, with real actors at 1× and 2× theme scale.
+- [x] Real GTK preference controls load, default to header mode and App Exposé icons off, and write their settings. The appearance combo is insensitive when grouping is disabled or the supplied Shell version is 48/49. These preference-version checks do not claim compositor testing on 48/49.
+
+Local reproduction command after `npm test`:
+
+```sh
+GROUPED_TEST_PRESENTATION=1 GROUPED_TEST_EXPECT_LABELS=1 GROUPED_TEST_SECOND_MONITOR=1 \
+  bash debug/20260923-120000-headless-gnome.sh "$PWD"
+```
+
+The ignored `debug/20260928-203300-preferences-probe.js` is invoked by that local
+harness to verify the GTK controls. Physical input and remaining manual checks
+below are still follow-up QA, not inferred passes from headless automation.
 
 ## Requires a live GNOME Shell session
 
@@ -70,6 +136,10 @@ Each isolated profile selects _App overview on down_. Focus one of the two termi
 - [ ] While Overview is visible, open, close, resize, minimize, and unminimize windows; affected groups recompute.
 - [ ] Move a window between workspaces and drag a preview between workspace thumbnails.
 - [ ] Traverse with the keyboard; focus remains usable and visits each application's windows contiguously.
+- [ ] The spiral paint order follows its window sequence; hover and keyboard focus highlight the selected preview without raising or enlarging it, and leaving removes the highlight.
+- [ ] Both grouped appearance choices suppress per-window icons: header mode shows an icon/name above each stack, icon mode shows just one icon below it.
+- [ ] App Exposé hides per-window icons by default; its independent option enables them with grouping either on or off.
+- [ ] Closing, dragging, and compositor restacking do not scramble the spiral's paint order.
 - [ ] Select a window, use its close button, and drag it; standard `WindowPreview` interactions remain functional.
 - [ ] Confirm app-grid transitions, search entry, per-window icons, titles, and overlays remain functional.
 
