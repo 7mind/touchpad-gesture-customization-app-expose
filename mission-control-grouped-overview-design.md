@@ -4,7 +4,7 @@
 **Primary Shell target:** GNOME Shell 50.x  
 **Document status:** implementation design / developer handoff  
 **Prepared:** 2026-08-25 (Europe/Dublin)
-**Revised:** 2026-09-27 — exposed clockwise stacks, non-reactive application headers, and spread windows in App Exposé.
+**Revised:** 2026-09-28 — manual acceptance recorded as follow-up QA by user decision.
 
 ## Baseline revisions
 
@@ -93,10 +93,13 @@ Hover spreading, clickable labels, cards, group highlights, and duplicate-icon
 suppression are excluded from this revision by the 2026-09-23 scope decision.
 
 Implementation status: phases 0–2 and the required phase 4–5 code are present.
-Clockwise exposure-aware stacking is committed as `0675d2a`. Pure tests and real
+Clockwise exposure-aware stacking is committed as `0675d2a`; application headers
+are committed as `ca5b659`. Pure tests and real
 GNOME 50.4 headless checks cover geometry, headers, App Exposé, multi-monitor
 policies and disable/re-enable. Physical entry paths, gesture reversal, dragging,
-and application identity acceptance remain manual gates, not claimed passes;
+and application identity acceptance remain unverified follow-up QA, not claimed
+passes. On 2026-09-28 the user confirmed that these checks do not gate completion
+of this implementation;
 see [the QA checklist](docs/drafts/20260825-2059-mission-control-grouped-overview-qa.md).
 
 ---
@@ -985,7 +988,8 @@ Consider making the Node test entry run multiple files instead of hardcoding onl
 
 ### Manual Shell acceptance matrix
 
-Test all of these on GNOME 50 before calling the feature complete:
+Run these on GNOME 50 as follow-up QA. By the 2026-09-28 user decision, unverified
+manual checks remain documented but do not gate completion of this implementation:
 
 #### Entry paths
 
@@ -1074,13 +1078,14 @@ At this point, keep standard per-window icons/titles. The success criterion is p
 
 ### Phase 3 - validate every Overview entry path
 
-Do not proceed until:
+The acceptance invariant is:
 
 ```text
 swipe up == Super == hot corner == programmatic normal Overview
 ```
 
-in terms of grouping.
+in terms of grouping. Physical entry-path validation is follow-up QA under the
+2026-09-28 user decision, rather than a gate on the later implementation phases.
 
 This phase specifically catches the failure mode where grouping accidentally lives in `OverviewRoundTripGestureExtension` rather than the global layout policy.
 

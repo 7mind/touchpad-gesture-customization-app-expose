@@ -2,6 +2,10 @@
 
 Record the GNOME Shell version, session type, monitor count, and extension commit before testing.
 
+On 2026-09-28 the user accepted the remaining manual checks as follow-up QA,
+not a completion gate for commits `0675d2a` and `ca5b659`. Unchecked items remain
+unverified; this decision does not turn them into passes.
+
 ## Covered by automated tests
 
 Run:
