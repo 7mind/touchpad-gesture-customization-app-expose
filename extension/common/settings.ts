@@ -5,12 +5,14 @@ import type {GroupedOverviewAppearance} from './groupedOverviewAppearance.js';
 export enum PinchGestureType {
     NONE = 0,
     SHOW_DESKTOP = 1,
-    CLOSE_WINDOW = 2,
-    CLOSE_DOCUMENT = 3,
+    OPEN_CLOSE_WINDOW = 2,
+    OPEN_CLOSE_DOCUMENT = 3,
     SHOW_NOTIFICATION_LIST = 4,
+    VOLUME_CONTROL = 5,
+    KEYBOARD_BACKLIGHT_CONTROL = 6,
 }
 
-export enum SwipeGestureType {
+export enum VerticalSwipeGestureType {
     NONE = 0,
     OVERVIEW_NAVIGATION = 1,
     WORKSPACE_SWITCHING = 2,
@@ -18,6 +20,17 @@ export enum SwipeGestureType {
     VOLUME_CONTROL = 4,
     BRIGHTNESS_CONTROL = 5,
     WINDOW_MANIPULATION = 6,
+    MEDIA_CONTROL = 7,
+}
+
+export enum HorizontalSwipeGestureType {
+    NONE = 0,
+    OVERVIEW_NAVIGATION = 1,
+    WORKSPACE_SWITCHING = 2,
+    WINDOW_SWITCHING = 3,
+    VOLUME_CONTROL = 4,
+    BRIGHTNESS_CONTROL = 5,
+    MEDIA_CONTROL = 6,
 }
 
 export enum OverviewNavigationState {
@@ -44,9 +57,11 @@ export enum ForwardBackKeyBinds {
 export type BooleanSettingsKeys =
     | 'allow-minimize-window'
     | 'allow-fullscreen-window'
+    | 'alttab-all-workspaces'
     | 'follow-natural-scroll'
     | 'invert-volume-gesture-direction'
     | 'invert-brightness-gesture-direction'
+    | 'invert-media-gesture-direction'
     | 'enable-forward-back-gesture'
     | 'default-overview-gesture-direction'
     | 'enable-vertical-app-gesture'
@@ -97,12 +112,14 @@ type Enum_Functions<K extends EnumSettingsKeys, T> = {
 };
 
 type SettingsEnumFunctions = Enum_Functions<
-    | 'vertical-swipe-3-fingers-gesture'
-    | 'horizontal-swipe-3-fingers-gesture'
-    | 'vertical-swipe-4-fingers-gesture'
-    | 'horizontal-swipe-4-fingers-gesture',
-    SwipeGestureType
+    'vertical-swipe-3-fingers-gesture' | 'vertical-swipe-4-fingers-gesture',
+    VerticalSwipeGestureType
 > &
+    Enum_Functions<
+        | 'horizontal-swipe-3-fingers-gesture'
+        | 'horizontal-swipe-4-fingers-gesture',
+        HorizontalSwipeGestureType
+    > &
     Enum_Functions<
         'pinch-3-finger-gesture' | 'pinch-4-finger-gesture',
         PinchGestureType

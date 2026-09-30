@@ -6,6 +6,8 @@
     <value value='2' nick='CLOSE_WINDOW' />
     <value value='3' nick='CLOSE_DOCUMENT' />
     <value value='4' nick='SHOW_NOTIFICATION_LIST' />
+    <value value='5' nick='VOLUME_CONTROL' />
+    <value value='6' nick='KEYBOARD_BACKLIGHT_CONTROL' />
   </enum>
   <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.grouped-overview-appearance'>
     <value value='0' nick='APPLICATION_HEADER' />
@@ -29,6 +31,7 @@
     <value value='4' nick='VOLUME_CONTROL' />
     <value value='5' nick='BRIGHTNESS_CONTROL' />
     <value value='6' nick='WINDOW_MANIPULATION' />
+    <value value='7' nick='MEDIA_CONTROL' />
   </enum>
   <enum id='org.gnome.shell.extensions.touchpad-gesture-customization.horizontal-swipe-gestures'>
     <value value='0' nick='NONE' />
@@ -37,6 +40,7 @@
     <value value='3' nick='WINDOW_SWITCHING' />
     <value value='4' nick='VOLUME_CONTROL' />
     <value value='5' nick='BRIGHTNESS_CONTROL' />
+    <value value='6' nick='MEDIA_CONTROL' />
   </enum>
   <schema id="org.gnome.shell.extensions.touchpad-gesture-customization" path="/org/gnome/shell/extensions/touchpad-gesture-customization/">
     <!-- See also: https://docs.gtk.org/glib/gvariant-format-strings.html -->
@@ -54,6 +58,10 @@
     </key>
     <key name="alttab-delay" type="i">
       <default>150</default>
+    </key>
+    <key name="alttab-all-workspaces" type="b">
+      <default>false</default>
+      <description>If true, window switcher shows windows across all workspaces</description>
     </key>
     <key name="hold-swipe-delay-duration" type="i">
       <default>10</default>
@@ -81,6 +89,12 @@
     <key name='invert-brightness-gesture-direction' type='b'>
       <default>true</default>
       <description>Invert brightness control gesture direction</description>
+    </key>
+    <key name='invert-media-gesture-direction' type='b'>
+      <!-- Defaults to false to preserve the previously hardcoded
+           followNaturalScroll=true behaviour for existing users. -->
+      <default>false</default>
+      <description>Invert media control gesture direction</description>
     </key>
     <key name='enable-forward-back-gesture' type='b'>
       <default>false</default>
