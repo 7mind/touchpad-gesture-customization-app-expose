@@ -55,6 +55,7 @@ export const TouchpadSwipeGesture = GObject.registerClass(
                 ],
             },
             end: {param_types: [GObject.TYPE_UINT, GObject.TYPE_DOUBLE]},
+            hold: {param_types: [GObject.TYPE_UINT]},
         },
     },
     class TouchpadSwipeGesture extends GObject.Object {
@@ -239,17 +240,28 @@ export const TouchpadSwipeGesture = GObject.registerClass(
         }
 
         private _handleHoldEvent(event: CustomEventType) {
+            if (
+                !this._nfingers.includes(
+                    event.get_touchpad_gesture_finger_count()
+                )
+            ) {
+                return;
+            }
+
             switch (event.get_gesture_phase()) {
                 case Clutter.TouchpadGesturePhase.BEGIN:
                     this._holdGestureCancelTime = 0;
                     this._holdGestureBeginTime = event.get_time();
+                    this.emit('hold', event.get_time());
                     break;
                 case Clutter.TouchpadGesturePhase.CANCEL:
                     this._holdGestureCancelTime = event.get_time();
                     break;
+
                 case Clutter.TouchpadGesturePhase.END:
                     this._holdGestureBeginTime = 0;
                     this._holdGestureCancelTime = 0;
+                    break;
             }
         }
 

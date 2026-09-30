@@ -16,7 +16,7 @@ buildNpmPackage {
 
   inherit src;
 
-  npmDepsHash = "sha256-aAuXYDDuKwHqCtEXJkEetPhp4OxRFPxcxRXJLWSTJzM=";
+  npmDepsHash = "sha256-UPTcatGg688w2tCQUX2wl10zcb6eaI07TvbVspsXJnc=";
 
   nativeBuildInputs = [ glib ];
 

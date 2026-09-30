@@ -183,6 +183,7 @@ function bindPrefsSettings(
         settings,
         builder
     );
+    bind_boolean_value('invert-media-gesture-direction', settings, builder);
     bind_boolean_value('enable-vertical-app-gesture', settings, builder);
     bind_boolean_value('app-overview-show-icons', settings, builder);
     bind_application_grouped_overview_value(settings, builder, shellVersion);
@@ -190,6 +191,7 @@ function bindPrefsSettings(
 
     bind_boolean_value('allow-minimize-window', settings, builder);
     bind_boolean_value('allow-fullscreen-window', settings, builder);
+    bind_boolean_value('alttab-all-workspaces', settings, builder);
 
     bind_combo_box('vertical-swipe-3-fingers-gesture', settings, builder);
     bind_combo_box('horizontal-swipe-3-fingers-gesture', settings, builder);

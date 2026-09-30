@@ -36,12 +36,15 @@ export const OverviewControlsState = {
 export const ExtSettings = {
     ALLOW_MINIMIZE_WINDOW: false,
     ALLOW_FULLSCREEN_WINDOW: true,
+    ALTTAB_ALL_WORKSPACES: false,
     FOLLOW_NATURAL_SCROLL: true,
     APP_GESTURES: false,
     DEFAULT_OVERVIEW_GESTURE_DIRECTION: true,
     INVERT_VOLUME_DIRECTION: false,
     INVERT_BRIGHTNESS_DIRECTION: false,
+    INVERT_MEDIA_DIRECTION: false,
 };
 
 export const RELOAD_DELAY = 150; // reload extension delay in ms
 export const WIDGET_SHOWING_DURATION = 100; // animation duration for showing widget
+export const OSD_FRAMETIME_CAP_MS = 1000 / 30; // frametime lower limit for osd updates

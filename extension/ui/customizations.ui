@@ -237,6 +237,19 @@
                     </object>
                 </child>
 
+                <!-- Invert media direction -->
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Invert media gesture direction</property>
+                        <child>
+                        <object class="GtkSwitch" id="invert-media-gesture-direction">
+                            <property name="valign">center</property>
+                            <property name="active">False</property>
+                        </object>
+                        </child>
+                    </object>
+                </child>
+
                 <!-- Enable vertical swipe for application specific gestures -->
                 <child>
                     <object class="AdwActionRow">
@@ -323,6 +336,19 @@
                     <object class="AdwComboRow" id="workspace-switching-states">
                         <property name="title" translatable="yes">Workspace switching states</property>
                         <property name="model">workspace_switching_states_model</property>
+                    </object>
+                </child>
+
+                <!-- Switch windows across all workspaces -->
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Switch windows across all workspaces</property>
+                        <property name="subtitle">Show windows from all workspaces in the Alt+Tab switcher</property>
+                        <child>
+                            <object class="GtkSwitch" id="alttab-all-workspaces">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
                     </object>
                 </child>
 

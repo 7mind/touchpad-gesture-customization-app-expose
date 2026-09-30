@@ -2,6 +2,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {WindowSwitcherPopup} from 'resource:///org/gnome/shell/ui/altTab.js';
 import {AltTabConstants, ExtSettings} from '../constants.js';
@@ -48,6 +49,7 @@ export default class AltTabGestureExtension implements ISubExtension {
     private _extState = AltTabExtState.DISABLED;
     private _progress = 0;
     private _altTabTimeoutId = 0;
+    private _unredirectInhibited = false;
 
     constructor() {
         this._adjustment = new St.Adjustment({
@@ -150,6 +152,16 @@ export default class AltTabGestureExtension implements ISubExtension {
         );
 
         this._extState = AltTabExtState.DEFAULT;
+
+        const windowSwitcherSettings = new Gio.Settings({
+            schema_id: 'org.gnome.shell.window-switcher',
+        });
+
+        if (ExtSettings.ALTTAB_ALL_WORKSPACES) {
+            windowSwitcherSettings.set_boolean('current-workspace-only', false);
+        } else {
+            windowSwitcherSettings.set_boolean('current-workspace-only', true);
+        }
     }
 
     destroy(): void {
@@ -182,6 +194,29 @@ export default class AltTabGestureExtension implements ISubExtension {
             this._switcher.destroy();
             this._switcher = undefined;
         }
+
+        this._uninhibitUnredirect();
+    }
+
+    /**
+     * Main.pushModal() inhibits unredirect for us, but we pop the modal right
+     * away so that the gesture keeps working, and Main.popModal() re-enables
+     * it. Without an inhibit of our own, mutter direct-scans out a window whose
+     * paint box exactly covers the monitor (fullscreen, or maximized while the
+     * panel is hidden) and the switcher is never composited in.
+     */
+    private _inhibitUnredirect() {
+        if (this._unredirectInhibited) return;
+
+        global.compositor.disable_unredirect();
+        this._unredirectInhibited = true;
+    }
+
+    private _uninhibitUnredirect() {
+        if (!this._unredirectInhibited) return;
+
+        global.compositor.enable_unredirect();
+        this._unredirectInhibited = false;
     }
 
     _onUpdateAdjustmentValue(): void {
@@ -229,6 +264,7 @@ export default class AltTabGestureExtension implements ISubExtension {
             if (nelement > 0) {
                 this._switcher.show(false, 'switch-windows', 0);
                 this._switcher._popModal();
+                this._inhibitUnredirect();
 
                 if (this._switcher._initialDelayTimeoutId) {
                     GLib.source_remove(this._switcher._initialDelayTimeoutId);
@@ -298,8 +334,16 @@ export default class AltTabGestureExtension implements ISubExtension {
     _gestureEnd(): void {
         if (this._switcher) {
             const win =
-                this._switcher._items[this._switcher._selectedIndex].window;
-            Main.activateWindow(win);
+                this._switcher._items[this._switcher._selectedIndex]?.window;
+
+            if (win) {
+                if (typeof win.activate === 'function') {
+                    win.activate(global.get_current_time());
+                } else {
+                    Main.activateWindow(win);
+                }
+            }
+
             this._switcher.destroy();
             this._switcher = undefined;
         }
@@ -308,6 +352,8 @@ export default class AltTabGestureExtension implements ISubExtension {
     }
 
     private _reset() {
+        this._uninhibitUnredirect();
+
         if (this._extState > AltTabExtState.DEFAULT) {
             this._extState = AltTabExtState.DEFAULT;
 

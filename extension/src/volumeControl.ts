@@ -5,7 +5,11 @@ import Gvc from 'gi://Gvc';
 import * as Volume from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {createSwipeTracker} from './swipeTracker.js';
-import {ExtSettings, TouchpadConstants} from '../constants.js';
+import {
+    ExtSettings,
+    OSD_FRAMETIME_CAP_MS,
+    TouchpadConstants,
+} from '../constants.js';
 import {showOsd} from './utils/compat.js';
 
 const VolumeIcons = [
@@ -129,7 +133,7 @@ export class VolumeControlGestureExtension implements ISubExtension {
         // If osd is updated too frequently, it may lag or freeze, so cap it to 30 fps
         const nowTimestamp = Date.now();
 
-        if (nowTimestamp - this._lastOsdShowTimestamp < 1000 / 30) {
+        if (nowTimestamp - this._lastOsdShowTimestamp < OSD_FRAMETIME_CAP_MS) {
             return;
         }
 
